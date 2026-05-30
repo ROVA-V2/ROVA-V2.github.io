@@ -92,9 +92,9 @@ three perception-side components needed to run end-to-end — `det`
 | `retrieve_frames`  | Selection  | 0.20 | shipped (pool-P retrieval; case study Tab. 7) |
 | **`detect_objects`** | Perception | 0.50 | **shipped — APE backend (det)** |
 | **`read_text`**      | Perception | 0.25 | **shipped — OCR via host VLM (ocr)** |
-| `caption_frame`    | Perception | 0.30 | plug-and-play template (add your own) |
-| `track_temporal`   | Perception | 0.70 | plug-and-play template (add your own) |
-| `recognize_action` | Perception | 0.60 | plug-and-play template (add your own) |
+| `caption_frame`    | Perception | 0.30 | plug-and-play (add your own) |
+| `track_temporal`   | Perception | 0.70 | plug-and-play (add your own) |
+| `recognize_action` | Perception | 0.60 | plug-and-play (add your own) |
 
 Costs are **reference values** (calibrated against `caption_frame` as the unit);
 your own tools may declare their own. Unregistered tools fall back to cost 0.5 in
