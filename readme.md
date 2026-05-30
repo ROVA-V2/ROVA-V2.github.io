@@ -1,16 +1,8 @@
 # RoVA-V2 — Robust-TO
 
-> **Submitted to NeurIPS 2026 — Do not distribute.**
-
 Reference implementation of **Robust-TO** (*Robust Video Understanding with Tool
 Orchestration*), the agentic framework from *“Confidence-Aware Tool Orchestration
 for Robust Video Understanding.”*
-
-- **Robust-TO** — the method (this code).
-- **RoVA-V2** — this project/release.
-- **RoVA-V1** — the video *corruption masker* used to generate the degraded
-  benchmark variants (Motion Blur, Gaussian Noise, Glare, Occlusion, Low-Light).
-  It is **not** the method; do not confuse the two.
 
 ---
 
