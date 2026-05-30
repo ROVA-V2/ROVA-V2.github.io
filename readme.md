@@ -77,13 +77,21 @@ uncertainty). Output format: `<think>...</think><answer>X</answer>`.
 
 ---
 
-## Tool library (Table 17)
+## Tool library (Table 17 — reference only)
 
-The paper's full library has 3 selection tools + 5 perception tools. **This
-release ships three perception-side components** and treats the rest as
-**plug-and-play** (Sec. 3.2: *“new tools can be registered by declaring
-[semantic-type and disturbance-profile] properties, making the framework readily
-extensible”*).
+The table below is the paper's **example** tool library (3 selection + 5
+perception tools) — **for reference only**. Per Table 17, *“users may define
+their own tool sets and assign arbitrary costs, as long as every tool conforms
+to the unified `(result, confidence)` interface.”* The whole visual tool library
+is therefore **user-definable**: swap tools in/out, rename them, add new ones,
+and set your own costs. The two-stage router depends only on each tool's declared
+semantic type + disturbance profile (Sec. 3.2), so the library is fully
+pluggable.
+
+**What this release ships is one runnable default**, not a fixed library: the
+three perception-side components needed to run end-to-end — `det`
+(`detect_objects`), `ocr` (`read_text`), and the **APE detection service**
+(`ape_tools/`) that backs detection. Everything else is a plug-and-play template.
 
 | Tool | Category | Cost | Status in this release |
 |---|---|---|---|
@@ -96,26 +104,34 @@ extensible”*).
 | `track_temporal`   | Perception | 0.70 | plug-and-play template (add your own) |
 | `recognize_action` | Perception | 0.60 | plug-and-play template (add your own) |
 
-**Released visual components: `det` (detect_objects), `ocr` (read_text), and the
-`APE` detection service (ape_tools/) that backs detection.**
+Costs are **reference values** (calibrated against `caption_frame` as the unit);
+your own tools may declare their own. Unregistered tools fall back to cost 0.5 in
+the reward.
 
-### Adding a perception tool (plug-and-play)
+### Define your own tool library (plug-and-play, arbitrary costs)
 
 ```python
 from rovid_pipeline.tools.perception_tools import PluggableTool, build_perception_tools
 
 class MyCaptioner(PluggableTool):
     name = "caption_frame"
+    cost = 0.30                                    # arbitrary, your choice (Table 17)
     def _run(self, frames, sub_query, disturbance_scores):
-        caption = my_model(frames, sub_query)     # your backend
-        return caption, my_confidence_in_[0,1]    # (result, c_intrinsic)
+        caption = my_model(frames, sub_query)      # your backend
+        return caption, my_confidence_in_[0,1]     # (result, c_intrinsic)
 
-tools = build_perception_tools(vlm_fn, extra_tools={"caption_frame": MyCaptioner()})
-# ... or pass extra_tools=... straight to RobustTOPipeline(...)
+# Register custom tools (and/or arbitrary costs) — nothing else changes:
+tools = build_perception_tools(
+    vlm_fn,
+    extra_tools={"caption_frame": MyCaptioner()},
+    extra_costs={"my_depth_tool": 0.45},           # or set per-tool `cost`
+)
+# ... or pass extra_tools=/extra_costs= straight to RobustTOPipeline(...)
 ```
 
-The router, the Eq. 4 confidence coupling, and the GRPO reward all work unchanged
-once the tool is registered — nothing in the orchestration layer needs editing.
+The router, the Eq. 4 confidence coupling, and the GRPO confidence-cost reward
+all work unchanged once a tool is registered — the orchestration layer never
+needs editing.
 
 > **Detection backbone note.** Paper Section B.1 names **GroundingDINO-T** for
 > `detect_objects`; this release wraps **APE** instead (the detector actually
@@ -124,7 +140,6 @@ once the tool is registered — nothing in the orchestration layer needs editing
 > reproduce with GroundingDINO-T, swap the backend in `DetectObjects._run`; the
 > `(label, box, score)` contract is all the tool depends on.
 
----
 
 ## GRPO confidence-cost reward (Section 3.3)
 
