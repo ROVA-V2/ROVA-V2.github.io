@@ -1,0 +1,1901 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+
+<script type="text/javascript" charset="utf-8" src="https://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
+<!-- <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script> -->
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']]
+    }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script>
+const carouselState = new Map();
+const carouselTimers = new Map();
+let activeVideo = null;
+
+function getCarouselTrack(carouselId) {
+    return document.getElementById(`carousel-${carouselId}`);
+}
+
+function getCarouselIndex(carouselId) {
+    return carouselState.get(carouselId) || 0;
+}
+
+function setCarouselIndex(carouselId, index) {
+    carouselState.set(carouselId, index);
+}
+
+function isAnyVideoPlaying(track) {
+    const videos = track.querySelectorAll("video");
+    for (const video of videos) {
+        if (!video.paused && !video.ended && video.readyState > 2) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function isAnyVideoPlayingGlobal() {
+    const videos = document.querySelectorAll("video");
+    for (const video of videos) {
+        if (!video.paused && !video.ended && video.readyState > 2) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function tryAutoPlay(video) {
+    if (!video) return;
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch(() => {
+            const onReady = () => {
+                video.play().catch(() => {});
+            };
+            video.addEventListener("canplay", onReady, { once: true });
+        });
+    }
+}
+
+function moveCarousel(carouselId, direction) {
+    const track = getCarouselTrack(carouselId);
+    if (!track) return;
+    const items = track.children.length;
+    if (!items) return;
+
+    const nextIndex = (getCarouselIndex(carouselId) + direction + items) % items;
+    setCarouselIndex(carouselId, nextIndex);
+    track.style.transform = `translateX(-${nextIndex * 100}%)`;
+
+    const carousel = document.querySelector(`.video-carousel[data-carousel="${carouselId}"]`);
+    if (carousel && carousel.dataset.autoplay === "true" && !isAnyVideoPlayingGlobal()) {
+        const activeVideo = track.children[nextIndex]?.querySelector("video");
+        tryAutoPlay(activeVideo);
+    }
+}
+
+function startCarouselAutoRotate(carouselId, intervalMs = 3500) {
+    if (carouselTimers.has(carouselId)) return;
+    const timer = setInterval(() => {
+        const track = getCarouselTrack(carouselId);
+        if (!track) return;
+        if (!isAnyVideoPlaying(track) && !isAnyVideoPlayingGlobal()) {
+            moveCarousel(carouselId, 1);
+        }
+    }, intervalMs);
+    carouselTimers.set(carouselId, timer);
+}
+
+function pauseOtherVideos(currentVideo) {
+    const keepConcurrent = true;
+    document.querySelectorAll("video").forEach((video) => {
+        if (video !== currentVideo) {
+            if (keepConcurrent && video.dataset.concurrent === "true") {
+                return;
+            }
+            video.pause();
+        }
+    });
+}
+
+function setActiveVideo(video) {
+    if (!video) return;
+    if (video.dataset.concurrent === "true") return;
+    if (activeVideo && activeVideo !== video) {
+        activeVideo.pause();
+    }
+    if (video.hasAttribute("autoplay")) {
+        video.removeAttribute("autoplay");
+    }
+    activeVideo = video;
+    pauseOtherVideos(video);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".video-carousel").forEach((carousel) => {
+        const carouselId = carousel.dataset.carousel;
+        if (!carouselId) return;
+        setCarouselIndex(carouselId, 0);
+        startCarouselAutoRotate(carouselId);
+    });
+
+    document.querySelectorAll(".video-carousel.auto-carousel").forEach((carousel) => {
+        const carouselId = carousel.dataset.carousel;
+        if (!carouselId) return;
+        const track = getCarouselTrack(carouselId);
+        if (!track) return;
+        const videos = track.querySelectorAll("video");
+        videos.forEach((video) => {
+            video.muted = true;
+            video.playsInline = true;
+        });
+    });
+
+    document.querySelectorAll(".video-carousel[data-autoplay='true']").forEach((carousel) => {
+        const carouselId = carousel.dataset.carousel;
+        if (!carouselId) return;
+        const track = getCarouselTrack(carouselId);
+        if (!track) return;
+        const videos = track.querySelectorAll("video");
+        videos.forEach((video) => {
+            video.muted = true;
+            video.playsInline = true;
+        });
+        const firstVideo = track.children[0]?.querySelector("video");
+        if (!isAnyVideoPlayingGlobal()) {
+            tryAutoPlay(firstVideo);
+        }
+    });
+
+    document.querySelectorAll("video[data-autoplay-inline='true']").forEach((video) => {
+        video.muted = true;
+        video.playsInline = true;
+        tryAutoPlay(video);
+    });
+
+    document.querySelectorAll("video").forEach((video) => {
+        video.addEventListener("play", () => setActiveVideo(video));
+    });
+
+    document.addEventListener("play", (event) => {
+        const target = event.target;
+        if (target && target.tagName === "VIDEO") {
+            setActiveVideo(target);
+        }
+    }, true);
+
+    document.addEventListener("playing", (event) => {
+        const target = event.target;
+        if (target && target.tagName === "VIDEO") {
+            setActiveVideo(target);
+        }
+    }, true);
+
+    // Initialize video zoom lens
+    initializeVideoZoom();
+});
+
+function initializeVideoZoom() {
+    // Create zoom lens element
+    const zoomLens = document.createElement('div');
+    zoomLens.className = 'video-zoom-lens';
+    const canvas = document.createElement('canvas');
+    zoomLens.appendChild(canvas);
+    document.body.appendChild(zoomLens);
+
+    const ctx = canvas.getContext('2d');
+    const lensSize = 300;
+    canvas.width = lensSize;
+    canvas.height = lensSize;
+
+    const zoomFactor = 1.4;
+    let currentVideo = null;
+    let animationFrameId = null;
+    let lastMouseEvent = null;
+
+    function showZoomLens(video, e) {
+        currentVideo = video;
+        lastMouseEvent = e;
+        positionZoomLens(e);
+        zoomLens.classList.add('visible');
+        if (!animationFrameId) {
+            animationFrameId = requestAnimationFrame(drawZoom);
+        }
+    }
+
+    function hideZoomLens() {
+        zoomLens.classList.remove('visible');
+        currentVideo = null;
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+    }
+
+    function positionZoomLens(e) {
+        const offsetX = 15;
+        const cursorX = e.clientX;
+        const cursorY = e.clientY;
+        let posX = cursorX + offsetX;
+        let posY = cursorY - Math.round(lensSize / 2);
+
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+
+        if (posX + lensSize > windowWidth - 20) {
+            posX = cursorX - lensSize - offsetX;
+        }
+        if (posY < 20) {
+            posY = 20;
+        } else if (posY + lensSize > windowHeight - 20) {
+            posY = windowHeight - lensSize - 20;
+        }
+
+        zoomLens.style.left = posX + 'px';
+        zoomLens.style.top = posY + 'px';
+    }
+
+    function drawZoom() {
+        if (!currentVideo || !lastMouseEvent) {
+            animationFrameId = null;
+            return;
+        }
+
+        const videoRect = currentVideo.getBoundingClientRect();
+        const videoWidth = currentVideo.videoWidth;
+        const videoHeight = currentVideo.videoHeight;
+
+        if (videoWidth === 0 || videoHeight === 0) {
+            animationFrameId = requestAnimationFrame(drawZoom);
+            return;
+        }
+
+        const mouseX = lastMouseEvent.clientX - videoRect.left;
+        const mouseY = lastMouseEvent.clientY - videoRect.top;
+
+        const scaleX = videoWidth / videoRect.width;
+        const scaleY = videoHeight / videoRect.height;
+
+        const videoMouseX = mouseX * scaleX;
+        const videoMouseY = mouseY * scaleY;
+
+        const zoomRegionWidth = lensSize / zoomFactor;
+        const zoomRegionHeight = lensSize / zoomFactor;
+
+        let sourceX = videoMouseX - zoomRegionWidth / 2;
+        let sourceY = videoMouseY - zoomRegionHeight / 2;
+
+        sourceX = Math.max(0, Math.min(sourceX, videoWidth - zoomRegionWidth));
+        sourceY = Math.max(0, Math.min(sourceY, videoHeight - zoomRegionHeight));
+
+        ctx.clearRect(0, 0, lensSize, lensSize);
+        try {
+            ctx.drawImage(
+                currentVideo,
+                sourceX, sourceY, zoomRegionWidth, zoomRegionHeight,
+                0, 0, lensSize, lensSize
+            );
+        } catch (err) {
+            // Video might not be ready yet
+        }
+
+        animationFrameId = requestAnimationFrame(drawZoom);
+    }
+
+    // Attach to all videos in comparison grids
+    const targetSelectors = [
+        '.motion-compare-grid-4x3 video',
+        '.robot-compare-grid-3x3 video',
+        '.video-grid-three video',
+        '.video-grid-two video'
+    ];
+
+    const comparisonVideos = document.querySelectorAll(targetSelectors.join(', '));
+
+    comparisonVideos.forEach(video => {
+        video.addEventListener('mouseenter', function(e) {
+            showZoomLens(this, e);
+        });
+        video.addEventListener('mousemove', function(e) {
+            if (currentVideo === this) {
+                lastMouseEvent = e;
+                positionZoomLens(e);
+            }
+        });
+        video.addEventListener('mouseleave', function() {
+            hideZoomLens();
+        });
+    });
+}
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+<style type="text/css">
+/* Base scale factor - adjust this single value to scale everything */
+:root {
+    --base-font-size: 16px;
+    --scale: 1.1;
+    /* Derived sizes */
+    --text-xs: calc(0.75rem * var(--scale));
+    --text-sm: calc(0.875rem * var(--scale));
+    --text-base: calc(1rem * var(--scale));
+    --text-lg: calc(1.125rem * var(--scale));
+    --text-xl: calc(1.25rem * var(--scale));
+    --text-2xl: calc(1.5rem * var(--scale));
+    --text-3xl: calc(1.875rem * var(--scale));
+    --text-4xl: calc(2.5rem * var(--scale));
+    /* Spacing */
+    --space-xs: calc(0.25rem * var(--scale));
+    --space-sm: calc(0.5rem * var(--scale));
+    --space-md: calc(1rem * var(--scale));
+    --space-lg: calc(1.5rem * var(--scale));
+    --space-xl: calc(2rem * var(--scale));
+    /* Container */
+    --container-max-width: min(75rem, 95vw);
+    /* Image/Video heights - now relative */
+    --img-height-sm: min(5rem, 20vw);
+    --img-height-md: min(15rem, 40vw);
+    --img-height-lg: min(20rem, 50vw);
+}
+
+html {
+    font-size: var(--base-font-size);
+}
+
+body {
+    font-family: "Titillium Web", "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+    font-weight: 300;
+    font-size: var(--text-base);
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+    max-width: var(--container-max-width);
+    padding: 0 var(--space-md);
+    box-sizing: border-box;
+}
+
+h1 {
+    font-weight: 300;
+    line-height: 1.15em;
+    text-align: center;
+    font-size: var(--text-4xl);
+    font-weight: 500;
+}
+
+h2 {
+    font-size: var(--text-2xl);
+    text-align: left;
+    font-weight: 400;
+    margin: var(--space-md) 0 var(--space-xs) 0;
+}
+
+h3 {
+    text-align: left;
+    font-weight: 600;
+    margin: var(--space-md) 0 var(--space-xs) 0;
+}
+
+a:link, a:visited {
+    color: #1f4fd8;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #208799;
+}
+
+b {
+    font-weight: 800;
+}
+
+.paper-title {
+    padding: var(--space-xs) 0;
+}
+
+section {
+    margin: var(--space-xl) 0;
+    text-align: justify;
+    clear: both;
+}
+
+.col-5 { width: 20%; float: left; }
+.col-4 { width: 25%; float: left; }
+.col-3 { width: 33.333%; float: left; }
+.col-2 { width: 50%; float: left; }
+.col-1 { width: 100%; float: left; }
+
+.author-row, .affil-row {
+    font-size: var(--text-2xl);
+}
+
+.author-row-new {
+    text-align: center;
+}
+
+.author-row-new a {
+    display: inline-block;
+    font-size: var(--text-xl);
+    padding: var(--space-xs);
+}
+
+.author-row-new sup {
+    color: #313436;
+    font-size: var(--text-xs);
+}
+
+.affiliations-new {
+    font-size: var(--text-lg);
+    text-align: center;
+    width: 80%;
+    margin: 0 auto var(--space-lg);
+}
+
+.row {
+    margin: var(--space-md) 0;
+}
+
+.authors {
+    font-size: var(--text-2xl);
+}
+
+.affiliatons {
+    font-size: var(--text-lg);
+}
+
+.equal-contrib {
+    font-size: var(--text-sm);
+}
+
+.affil-row {
+    margin-top: var(--space-lg);
+}
+
+.teaser {
+    max-width: 100%;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.screenshot {
+    width: min(16rem, 80vw);
+    border: 1px solid #ddd;
+}
+
+.screenshot-el {
+    margin-bottom: var(--space-md);
+}
+
+hr {
+    height: 1px;
+    border: 0;
+    border-top: 1px solid #ddd;
+    margin: 0;
+}
+
+.material-icons {
+    vertical-align: -0.375rem;
+}
+
+p {
+    line-height: 1.25em;
+}
+
+.caption {
+    font-size: var(--text-base);
+    color: #666;
+    margin-top: var(--space-xs);
+    margin-bottom: var(--space-sm);
+    text-align: left;
+}
+
+video {
+    display: block;
+    margin: auto;
+    max-width: 100%;
+}
+
+figure {
+    display: block;
+    margin: auto;
+    margin-top: var(--space-sm);
+    margin-bottom: var(--space-sm);
+}
+
+#bibtex pre {
+    font-size: var(--text-sm);
+    background-color: #eee;
+    padding: var(--space-md);
+    overflow-x: auto;
+}
+
+.green {
+    color: #0E710E;
+    font-weight: bold;
+}
+
+.orange {
+    color: #d35400;
+    font-weight: bold;
+}
+
+.flex-row {
+    display: flex;
+    flex-flow: row wrap;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.coming-soon {
+    position: absolute;
+    top: -1rem;
+    right: -1rem;
+}
+
+.paper-btn:hover {
+    color: #FF8563;
+    transform: translateY(-0.125rem);
+}
+
+.paper-btn-parent {
+    display: flex;
+    justify-content: center;
+    margin: var(--space-md) 0;
+    gap: var(--space-lg);
+    font-size: var(--text-xl);
+    flex-wrap: wrap;
+}
+
+.github-btn:hover {
+    color: #FF8563;
+    transform: translateY(-0.125rem);
+}
+
+.container {
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+}
+
+.venue {
+    font-size: var(--text-xl);
+}
+
+.topnav {
+    background-color: #EEEEEE;
+    overflow: hidden;
+}
+
+.topnav div {
+    max-width: var(--container-max-width);
+    margin: 0 auto;
+}
+
+.topnav a {
+    display: inline-block;
+    color: black;
+    text-align: center;
+    vertical-align: middle;
+    padding: var(--space-md);
+    text-decoration: none;
+    font-size: var(--text-lg);
+}
+
+.topnav img {
+    padding: var(--space-xs) 0;
+    width: 100%;
+    margin: 0.2em 0 0.3em 0;
+    vertical-align: middle;
+}
+
+pre {
+    font-size: 0.9em;
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: 0.1875rem;
+    background-color: rgb(235, 235, 235);
+    overflow-x: auto;
+}
+
+.download-thumb {
+    display: flex;
+}
+
+@media only screen and (max-width: 38.75rem) {
+    .download-thumb {
+        display: none;
+    }
+}
+
+.paper-stuff {
+    width: 50%;
+    font-size: var(--text-xl);
+}
+
+@media only screen and (max-width: 38.75rem) {
+    .paper-stuff {
+        width: 100%;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+.column {
+    text-align: center;
+    float: left;
+    width: 16.666%;
+    padding: var(--space-xs);
+}
+
+.column3 {
+    text-align: center;
+    float: left;
+    width: 33.333%;
+    padding: var(--space-xs);
+}
+
+.border-right {
+    border-right: 1px solid black;
+}
+
+.border-bottom {
+    border-bottom: 1px solid black;
+}
+
+.row::after {
+    content: "";
+    clear: both;
+    display: table;
+}
+
+.image-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.25fr;
+    gap: var(--space-sm);
+    width: 100%;
+}
+
+.image-grid img {
+    width: 100%;
+}
+
+.image-grid img:first-child {
+    object-fit: contain;
+}
+
+@media screen and (max-width: 31.25rem) {
+    .column {
+        width: 100%;
+    }
+    .column3 {
+        width: 100%;
+    }
+}
+
+.figure img {
+    width: 100%;
+}
+
+.image-grid-three {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-sm);
+    width: 90%;
+    justify-items: center;
+    margin: 0 auto;
+}
+
+.image-grid-three img {
+    width: 100%;
+}
+
+.image-grid-tab {
+    text-align: center;
+    justify-content: center;
+    display: grid;
+    place-items: center;
+    grid-template-columns: 1fr 1.22fr;
+    gap: var(--space-sm);
+    width: 90%;
+    justify-items: center;
+    margin: 0 auto;
+}
+
+.image-grid-tab img {
+    width: 100%;
+}
+
+blockquote {
+    background-color: rgba(40, 40, 40, 0.2);
+    padding: 0;
+    margin: var(--space-xs) 0;
+    border-radius: var(--space-sm);
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--text-xl);
+}
+.tldr-blockquote {
+    font-size: calc(var(--text-xl) * 1.15);
+}
+
+.video-carousel {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    margin: var(--space-md) auto var(--space-lg);
+    overflow: hidden;
+}
+
+.video-carousel-track {
+    display: flex;
+    transition: transform 0.4s ease-in-out;
+    width: 100%;
+}
+
+.video-carousel-track > video {
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.4);
+    border: none;
+    color: white;
+    font-size: var(--text-xl);
+    padding: var(--space-sm) var(--space-md);
+    cursor: pointer;
+    z-index: 10;
+}
+
+.carousel-btn.left { left: var(--space-sm); }
+.carousel-btn.right { right: var(--space-sm); }
+
+.carousel-desc {
+    margin: var(--space-xs) 0 var(--space-sm) 0;
+}
+
+.method-compare {
+    display: flex;
+    gap: var(--space-md);
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.method-compare img {
+    height: var(--img-height-md);
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.emphasis-text {
+    text-align: center;
+    font-weight: 600;
+    font-size: var(--text-lg);
+    margin: var(--space-xs) 0 0 0;
+}
+
+.method-figure img {
+    height: var(--img-height-md);
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.method-figure {
+    text-align: center;
+}
+
+.equation-compare {
+    margin: var(--space-xs) auto 0;
+}
+
+.side-by-side {
+    display: flex;
+    gap: var(--space-xl);
+    justify-content: center;
+    align-items: stretch;
+    flex-wrap: wrap;
+}
+
+.side-by-side figure {
+    flex: 1 1 0;
+    margin: 0;
+    max-width: min(30rem, 100%);
+    min-width: min(18rem, 100%);
+    display: flex;
+    flex-direction: column;
+}
+
+.side-by-side img {
+    width: 100%;
+    height: var(--img-height-lg);
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.side-by-side.equation-compare {
+    align-items: center;
+    gap: calc(var(--space-md) * 4);
+    flex-wrap: nowrap;
+}
+
+.side-by-side.equation-compare figure {
+    flex: 1 1 auto;
+    max-width: 35%;
+    min-width: 0;
+}
+
+.side-by-side.equation-compare img {
+    height: auto;
+    width: 100%;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+@media only screen and (max-width: 38.75rem) {
+    .side-by-side.equation-compare {
+        flex-wrap: wrap;
+        gap: var(--space-sm);
+    }
+    .side-by-side.equation-compare figure {
+        flex: 1 1 100%;
+        max-width: 80%;
+        margin: 0 auto;
+    }
+}
+
+.side-by-side.pnp-compare {
+    gap: var(--space-sm);
+}
+
+.side-by-side.pnp-compare img {
+    height: min(5rem, 20vw);
+    max-height: none;
+}
+
+.wrap-figure {
+    display: flex;
+    gap: var(--space-lg);
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.wrap-figure-text {
+    flex: 1 1 55%;
+    min-width: min(17.5rem, 100%);
+}
+
+.wrap-figure-media {
+    flex: 1 1 45%;
+    min-width: min(17.5rem, 100%);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    align-items: stretch;
+}
+
+.wrap-figure-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid #9b9b9b;
+    border-radius: var(--space-sm);
+    flex-wrap: nowrap;
+}
+
+.wrap-figure-caption {
+    font-size: var(--text-base);
+    color: #000000;
+    white-space: normal;
+    order: 1;
+    text-align: left;
+    flex: 0 0 60%;
+    max-width: 60%;
+}
+
+.wrap-figure-media figure {
+    margin: 0;
+    order: 2;
+    flex: 0 0 40%;
+    max-width: 40%;
+}
+
+.wrap-figure-media img {
+    height: auto;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+@media only screen and (max-width: 48rem) {
+    .wrap-figure-item {
+        flex-wrap: wrap;
+    }
+    .wrap-figure-caption {
+        flex: 1 1 100%;
+        max-width: 100%;
+        order: 2;
+    }
+    .wrap-figure-media figure {
+        flex: 1 1 100%;
+        max-width: 100%;
+        order: 1;
+    }
+}
+
+.video-grid-three {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-sm);
+    width: 100%;
+    margin: var(--space-sm) auto 0;
+    align-items: start;
+}
+
+.video-grid-three video {
+    width: 100%;
+    height: auto;
+}
+
+.video-grid-two {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-sm);
+    width: 66.66%;
+    margin: var(--space-sm) auto 0;
+    align-items: start;
+}
+
+.video-grid-two video {
+    width: 100%;
+    height: auto;
+}
+
+@media only screen and (max-width: 48rem) {
+    .video-grid-three {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .video-grid-two {
+        width: 100%;
+    }
+}
+
+@media only screen and (max-width: 38.75rem) {
+    .video-grid-three {
+        grid-template-columns: 1fr;
+    }
+    .video-grid-two {
+        width: 100%;
+        grid-template-columns: 1fr;
+    }
+    .side-by-side {
+        gap: var(--space-md);
+    }
+    .side-by-side.equation-compare img {
+        height: min(6.25rem, 25vw);
+    }
+    .side-by-side.pnp-compare {
+        gap: var(--space-sm);
+    }
+    .side-by-side.pnp-compare img {
+        height: min(6.5rem, 30vw);
+    }
+    blockquote {
+        font-size: var(--text-base);
+    }
+}
+
+.ablation-figure {
+    margin: 0 auto;
+}
+
+.ablation-text {
+    margin: 0;
+}
+
+/* Motion Comparison Carousel Styles */
+.motion-compare-slide {
+    width: 100%;
+    flex: 0 0 100%;
+    box-sizing: border-box;
+}
+
+.motion-compare-grid-4x3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: auto;
+    gap: var(--space-sm);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.motion-video-item {
+    text-align: center;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.motion-video-item video {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.motion-label {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    margin: 0 0 var(--space-xs);
+    color: #333;
+}
+
+.ours-row-wrapper {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-sm);
+    background: linear-gradient(135deg, rgba(79, 172, 254, 0.15) 0%, rgba(0, 242, 254, 0.15) 100%);
+    border-radius: var(--space-md);
+    padding: var(--space-sm);
+    border: 2px solid rgba(79, 172, 254, 0.4);
+}
+
+.ours-row-wrapper .row-label {
+    color: #1a73e8;
+}
+
+.ours-row-wrapper .motion-label {
+    color: #1a73e8;
+}
+
+.base-row-wrapper,
+.nfe-row-wrapper,
+.flowmo-row-wrapper,
+.bon-row-wrapper {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-sm);
+    border-radius: var(--space-md);
+    padding: var(--space-sm);
+    border: 2px solid transparent;
+}
+
+.base-row-wrapper {
+    background: transparent;
+    border-color: rgba(255, 193, 7, 0.5);
+}
+
+.base-row-wrapper .row-label {
+    color: #d68400;
+}
+
+.nfe-row-wrapper {
+    background: transparent;
+    border-color: rgba(172, 61, 61, 0.5);
+}
+
+.nfe-row-wrapper .row-label {
+    color: #b13d3d;
+}
+
+.flowmo-row-wrapper {
+    background: transparent;
+    border-color: rgba(156, 39, 176, 0.5);
+}
+
+.flowmo-row-wrapper .row-label {
+    color: #8b1fa9;
+}
+
+.bon-row-wrapper {
+    background: transparent;
+    border-color: rgba(96, 125, 139, 0.5);
+}
+
+.bon-row-wrapper .row-label {
+    color: #455a64;
+}
+
+.row-label {
+    grid-column: 1 / -1;
+    text-align: center;
+    font-weight: 700;
+    margin: 0 0 var(--space-xs);
+    font-size: var(--text-xl);
+}
+
+@media only screen and (max-width: 48rem) {
+    .motion-compare-grid-4x3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .ours-row-wrapper,
+    .base-row-wrapper,
+    .nfe-row-wrapper,
+    .flowmo-row-wrapper,
+    .bon-row-wrapper {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media only screen and (max-width: 38.75rem) {
+    .motion-compare-grid-4x3 {
+        grid-template-columns: 1fr;
+    }
+    .ours-row-wrapper,
+    .base-row-wrapper,
+    .nfe-row-wrapper,
+    .flowmo-row-wrapper,
+    .bon-row-wrapper {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Robot Comparison Grid Styles */
+.robot-compare-grid-3x3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: auto;
+    gap: var(--space-sm);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.robot-video-item {
+    text-align: center;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.robot-video-item video {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.video-prompt {
+    font-size: var(--text-base);
+    color: #666;
+    margin: var(--space-xs) 0 var(--space-sm);
+    font-style: italic;
+}
+
+.prompt-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-xs);
+    width: 100%;
+    margin: var(--space-xs) auto 0;
+    text-align: center;
+}
+
+@media only screen and (max-width: 48rem) {
+    .robot-compare-grid-3x3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .prompt-grid-3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media only screen and (max-width: 38.75rem) {
+    .robot-compare-grid-3x3 {
+        grid-template-columns: 1fr;
+    }
+    .prompt-grid-3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Video Zoom Lens Styling */
+.video-zoom-lens {
+    position: fixed;
+    z-index: 10000;
+    background: transparent;
+    border-radius: 12px;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8),
+                0 0 0 3px rgba(0, 0, 0, 0.2),
+                0 8px 32px rgba(0, 0, 0, 0.35);
+    padding: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    border: none;
+    overflow: hidden;
+}
+
+.video-zoom-lens.visible {
+    opacity: 1;
+}
+
+.video-zoom-lens canvas {
+    display: block;
+    border-radius: 12px;
+    width: 150;
+    height: 150;
+}
+
+.hover-instruction {
+    text-align: center;
+    margin: var(--space-sm) 0;
+    padding: var(--space-sm);
+    background: #f8f9fa;
+    border-radius: var(--space-sm);
+    color: #555;
+    font-size: var(--text-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+}
+
+.hover-instruction i {
+    color: #1a73e8;
+    font-size: var(--text-base);
+}
+
+/* Mobile-first responsive adjustments */
+@media only screen and (max-width: 38.75rem) {
+    :root {
+        --scale: 0.9;
+    }
+    
+    h1 {
+        font-size: var(--text-3xl);
+    }
+    
+    .author-row-new a {
+        font-size: var(--text-base);
+        padding: var(--space-xs);
+    }
+    
+    .affiliations {
+        font-size: var(--text-base);
+    }
+    
+    .paper-btn-parent {
+        gap: var(--space-md);
+        font-size: var(--text-base);
+    }
+}
+</style>
+
+<script type="text/javascript" src="../js/hidebib.js"></script>
+    <link href='https://fonts.googleapis.com/css?family=Titillium+Web:400,600,400italic,600italic,300,300italic' rel='stylesheet' type='text/css'>
+    <head>
+        <title>Self-Refining Video Sampling</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta property="og:description" content="Self-Refining Video Sampling"/>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+        <link href="https://fonts.googleapis.com/css2?family=FontAwesome" rel="stylesheet">
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:creator" content="@sangwon.jang">
+        <meta name="twitter:title" content="Self-Refining Video Sampling">
+    </head>
+
+<body>
+<div class="container">
+    <div class="paper-title">
+    <h1>
+        Self-Refining Video Sampling
+    </h1>
+    </div>
+
+    <div id="authors">
+        <center>
+            <div class="author-row-new">
+                <a href="https://agwmon.github.io">Sangwon Jang<sup>1,*</sup></a>,
+                <a href="https://taekyungki.github.io">Taekyung Ki<sup>1,*</sup></a>,
+                <a href="https://harryjo97.github.io">Jaehyeong Jo<sup>1,*</sup></a>,
+                <a href="https://www.sainingxie.com/">Saining Xie<sup>2</sup></a>,
+                <a href="https://jaehong31.github.io">Jaehong Yoon<sup>3,&dagger;</sup></a>,
+                <!-- <a href="https://jaehong31.github.io">Jaehong Yoon<sup>3</sup></a>, -->
+                <a href="http://www.sungjuhwang.com">Sung Ju Hwang<sup>1,4,&dagger;</sup></a>
+                <!-- <a href="http://www.sungjuhwang.com">Sung Ju Hwang<sup>1,4</sup></a> -->
+            </div>
+        </center>
+        <center>
+        <div class="affiliations">
+            <span><sup>1</sup>KAIST</span>&nbsp;&nbsp;&nbsp;
+            <span><sup>2</sup>NYU</span>&nbsp;&nbsp;&nbsp;
+            <span><sup>3</sup>NTU Singapore</span>&nbsp;&nbsp;&nbsp;
+            <span><sup>4</sup>DeepAuto.ai</span> <br>
+        </div>
+
+        <!-- <p class="equal-contrib"><span><sup>*</sup>Equal Contribution</span></p> -->
+        <p class="equal-contrib"><span><sup>*</sup>Equal Contribution,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<sup>&dagger;</sup>Equal Advising</span></p>
+        
+        <div class="affil-row">
+            <div class="venue text-center"><b>ICML 2026</b></div>
+        </div>
+        </center>
+
+        <div style="clear: both">
+            <div class="paper-btn-parent">
+                <a class="paper-btn" href="https://arxiv.org/abs/2601.18577">
+                    <span class="fas fa-file-alt"></span> 
+                    Paper
+                </a>   
+                <a class="github-btn" href="https://github.com/agwmon/self-refine-video">
+                    <span class="fab fa-github"></span> 
+                    Code
+                </a>           
+        </div>
+        </div>
+        <!-- <div class="video-carousel auto-carousel" data-carousel="c5" data-autoplay="true">
+            <button class="carousel-btn left" onclick="moveCarousel('c5', -1)">&#10094;</button>
+            <button class="carousel-btn right" onclick="moveCarousel('c5', 1)">&#10095;</button>
+            <div class="video-carousel-track" id="carousel-c5">
+                <video controls playsinline muted autoplay>
+                    <source src="assets/videos/rumi_interface_01.mp4" type="video/mp4">
+                </video>
+                <video controls playsinline muted>
+                    <source src="assets/videos/rumi_interface_02.mp4" type="video/mp4">
+                </video>
+            </div>
+        </div> -->
+        <div class="video-grid-three">
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/motion/ours/79.mp4" type="video/mp4">
+                </video>
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/videos/wani2v/ours/robot_074.mp4" type="video/mp4">
+                </video>
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/videos/etc/graph_ours.mp4" type="video/mp4">
+                </video>
+        </div>
+        <div class="video-grid-two">
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/videos/etc/physics.mp4" type="video/mp4">
+                </video>
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/videos/etc/spatial.mp4" type="video/mp4">
+                </video>
+        </div>
+        <br>
+        <blockquote class="tldr-blockquote">    
+            <p>
+                <b>[TL;DR]</b> We present <b>self-refining video sampling</b> method that reuses a pre-trained video generator as a denoising autoencoder to iteratively refine latents.
+                With ~50% additional NFEs, it improves physical realism (e.g., motion coherence and physics alignment) <i>without any external verifier, training, or dataset</i>.
+            </p>
+        </blockquote>
+    </div>
+    <br>
+
+    <section>
+        <h2>Methods</h2>
+        <hr>
+
+        <!-- <p>
+            We further introduce a self-refining mechanism that iteratively improves generation quality and temporal consistency.
+        </p> -->
+        <h3>Flow Matching as Denoising Autoencoder</h3>
+            <p>
+                We revisit the connection between diffusion models and denoising autoencoders (DAE) [1-2], and extend this connection to interpret flow matching as a DAE from a training objective perspective.
+                In particular, up to a time-dependent weighting, the flow-matching loss is equivalent to a standard DAE [3] reconstruction objective.
+                <div class="side-by-side equation-compare">
+                    <figure>
+                        <img src="assets/items/fm_loss.png" alt="Flow matching loss">
+                    </figure>
+                    <figure>
+                        <img src="assets/items/dae_loss.png" alt="DAE loss">
+                    </figure>
+                </div>
+
+            
+            
+                for which the model learns to denoise the corrupted input $z_t$ back to the clean sample $z_1$. 
+            </p>
+            <div class="wrap-figure">
+                <div class="wrap-figure-text">
+                    <p>
+                        Thus, flow matching trained model can be used as a time-conditioned DAE.
+                        At inference time, we repurpose the pre-trained model as DAE, <i>self-refiner</i>, iteratively refining samples toward the data manifold.
+                    </p>
+                </div>
+                <div class="wrap-figure-media">
+                    <div class="wrap-figure-item">
+                        <figure>
+                            <img src="assets/items/pnp.png" alt="PnP iteration">
+                        </figure>
+                        <span class="wrap-figure-caption">From a DAE perspective, <b>Predict</b> acts as a denoiser that maps a noisy state $z_t$ toward a clean sample, while <b>Perturb</b> injects noise by interpolating with Gaussian noise at level $t$. Together, they form a simple corrupt–reconstruct loop for DAE-style refinement.</span>
+                    </div>
+                    <div class="wrap-figure-item">
+                        <figure>
+                            <img src="assets/items/pnp-3.png" alt="PnP multiple">
+                        </figure>
+                        <span class="wrap-figure-caption">At a fixed noise level $t$, we iteratively apply them to refine $z_t$, an operation we call <b>Predict-and-Perturb (P&P)</b>. Repeating this process for a few iterations $k$ gradually steers latents toward higher density regions (i.e., data manifold).</span>
+                    </div>
+                </div>
+            </div>
+        
+        <br><br>
+        <!-- <h3>Self-Refining Video Sampling</h3> -->
+
+        <div class="side-by-side">
+            <figure>
+                <img src="assets/items/figure_1_concept.png" alt="Figure a">
+                <figcaption class="caption"><b>Concept of the self-refining video sampling.</b> Within the same noise level, the video latent $z_t$ is refined as the predicted endpoint $\hat{z}_1$ is pulled toward the data manifold. </figcaption>
+            </figure>
+            <figure>
+                <img src="assets/items/figure_2.png" alt="Figure b">
+                <figcaption class="caption"><b>Sampling comparison on 2D synthetic dataset.</b> <b>(a-b)</b> P&P generates samples closer to the data manifold compared to the Euler solver. <b>(c-d)</b> When fixing the timestep, iterative P&P pulls the prediction $\hat{z}_1$ closer to the data manifold</figcaption>
+            </figure>
+        </div>
+        <!-- <p> 
+            Mirroring the corrupt-reconstruct structure of a DAE, P&P performs an inner-loop refinement at each noise level, progressively pulling the latent toward <b>higher-density regions of the learned video distribution</b>. This refinement promotes temporally coherent and physically plausible videos. As illustrated by the 2D toy experiment, P&P generates samples that lie closer to the data manifold.
+        </p> -->
+        <p>
+            In practice, only 2–3 iterations are sufficient to improve temporal coherence and physical plausibility. The refined state $z_t^*:= z^{(K)}_{t}$ is then used as the updated state and passed to the next ODE step, enabling plug-and-play integration with existing solvers by simply replacing $z_t$ with $z_t^*$.
+        </p>
+            
+            <p>
+            <br>
+            [1] Vincent Pascal, A Connection Between Score Matching and Denoising Autoencoders, Neural computation, 2011
+            <br>
+            [2] Song & Ermon, Generative Modeling by Estimating Gradients of the Data Distribution, NeurIPS, 2019
+            <br>
+            [3] Bengio et al., Generalized Denoising Auto-encoders as Generative Models, NeurIPS, 2013
+        </p>
+
+        <br>
+        <h3>Uncertainty-aware Predict-and-Perturb</h3>
+        <p>
+            However, we observe that multiple P&P updates ($K \geq 3$) with classifier-free guidance can lead to over-saturation or simplification in static regions such as the background.
+            To address this, we propose an <b>Uncertainty-aware P&P</b> that selectively refines only the locally uncertain regions.
+            Specifically, we estimate the model confidence of the prediction, $\mathbf{U}=\|\hat{z}_1^{(k)}-\hat{z}_1^{(k+1)}\|_1,$ which measures how sensitive the prediction is to the Perturb step.
+
+            <div class="video-grid-three">
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/items/basket-video.mp4" type="video/mp4">
+                </video>
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/items/basket-unc.mp4" type="video/mp4">
+                </video>
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/items/basket-overlay.mp4" type="video/mp4">
+                </video>
+            </div>
+            <br>
+            Here, we apply the P&P update only to regions where the uncertainty $\mathbf{U}$ exceeds a predefined threshold $\tau$.
+            Notably, it <b><i>does not require any additional model evaluations</i></b> (NFE) since both predictions are already computed during the P&P process. Please refer to the paper for more details.
+        </p>
+        
+
+    </section>
+    
+    <section>
+        <h2>Results</h2>
+        <hr>
+        <h3>Motion Enhanced Video Generation with Wan2.2-A14B T2V</h3>
+        <div class="hover-instruction">
+            <i class="fas fa-search-plus"></i>
+            <span>Hover over each video to zoom in</span>
+        </div>
+        <p>Wan2.2-A14B already generates human motion reasonably well, but our method can substantially further improve it.</p>
+        <!-- Motion Comparison Carousel: 1 carousel with 2 pages, each page has 4x3 grid (4 methods x 3 samples) -->
+        <div class="video-carousel" data-carousel="motion">
+            <button class="carousel-btn left" onclick="moveCarousel('motion', -1)">&#10094;</button>
+            <button class="carousel-btn right" onclick="moveCarousel('motion', 1)">&#10095;</button>
+            <div class="video-carousel-track" id="carousel-motion">
+                <!-- Page 1: samples 5, 10, 41 -->
+                <div class="motion-compare-slide">
+                    <div class="motion-compare-grid-4x3">
+                        <!-- Row 1: Ours -->
+                        <div class="ours-row-wrapper">
+                            <p class="row-label">Ours</p>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/ours/49.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/ours/70.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/ours/79.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                        </div>
+                        <!-- Row 2: Base -->
+                        <div class="base-row-wrapper">
+                            <p class="row-label">Base</p>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/base/49.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">Base</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/base/70.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">Base</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/base/79.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">Base</p> -->
+                            </div>
+                        </div>
+                        <!-- Row 3: NFE×2 -->
+                        <div class="nfe-row-wrapper">
+                            <p class="row-label">NFE×2</p>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/nfex2/49.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">NFE×2</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/nfex2/70.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">NFE×2</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/nfex2/79.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">NFE×2</p> -->
+                            </div>
+                        </div>
+                        <!-- Row 4: FlowMo -->
+                        <div class="flowmo-row-wrapper">
+                            <p class="row-label">FlowMo</p>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/flowmo/49.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">FlowMo</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/flowmo/70.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">FlowMo</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/flowmo/79.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">FlowMo</p> -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prompt-grid-3">
+                        <p class="video-prompt">A sprinter explodes out of the starting blocks, body at a 45-degree angle, transitioning into an upright running posture.</p>
+                        <p class="video-prompt">A trapeze artist releases their bar, performs a triple somersault in mid-air, and is caught by the catcher on the opposing bar.</p>
+                        <p class="video-prompt">A gymnast on a pommel horse swings their legs in wide circles (flares), supporting their entire weight on alternating hands.</p>
+                    </div>
+                </div>
+                <div class="motion-compare-slide">
+                    <div class="motion-compare-grid-4x3">
+                        <!-- Row 1: Ours -->
+                        <div class="ours-row-wrapper">
+                            <p class="row-label">Ours</p>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/ours/5.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/ours/10.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/ours/41.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                        </div>
+                        <!-- Row 2: Base -->
+                        <div class="base-row-wrapper">
+                            <p class="row-label">Base</p>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/base/5.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">Base</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/base/10.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">Base</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/base/41.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">Base</p> -->
+                            </div>
+                        </div>
+                        <!-- Row 3: NFE×2 -->
+                        <div class="nfe-row-wrapper">
+                            <p class="row-label">NFE×2</p>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/nfex2/5.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">NFE×2</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/nfex2/10.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">NFE×2</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/nfex2/41.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">NFE×2</p> -->
+                            </div>
+                        </div>
+                        <!-- Row 4: FlowMo -->
+                        <div class="flowmo-row-wrapper">
+                            <p class="row-label">FlowMo</p>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/flowmo/5.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">FlowMo</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/flowmo/10.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">FlowMo</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/flowmo/41.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">FlowMo</p> -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prompt-grid-3">
+                        <p class="video-prompt">A sword fighter parries a heavy blow from an opponent’s axe, causing the axe to slide down the blade and spark against the crossguard.</p>
+                        <p class="video-prompt">A basketball hits the rim, bounces straight up, hits the backboard, and finally falls through the net.</p>
+                        <p class="video-prompt">A parkour athlete runs up a vertical wall, grabs the ledge, and muscles up to stand on the roof in one fluid motion.</p>
+                    </div>
+                </div>
+                <!-- Page 2: samples 49, 70, 79 -->
+
+            </div>
+        </div>
+
+        <!-- <div class="video-carousel" data-carousel="c3">
+            <button class="carousel-btn left" onclick="moveCarousel('c3', -1)">&#10094;</button>
+            <button class="carousel-btn right" onclick="moveCarousel('c3', 1)">&#10095;</button>
+        <p> We also reprouce INFP, denoted as INFP*, and compare with it.</p>
+        <div class="video-carousel-track" id="carousel-c3">
+                <video controls playsinline>
+                    <source src="assets/videos/01_compare_interactive_01.mp4" type="video/mp4">
+                </video>
+                <video controls playsinline>
+                    <source src="assets/videos/01_compare_interactive_02.mp4" type="video/mp4">
+                </video>
+            </div>
+        </div>
+        <br> -->
+
+        <h3>Image-to-Video Robotics Video Generation with Cosmos-predict2.5-2B</h3>
+        <p> Our method is also applicable to Image-to-Video generation.
+Applied to Cosmos-Predict2.5-2B, it reduces common robotics artifacts such as unstable grasps and implausible interactions, and produces more consistent motion than rejection sampling with Cosmos-Reason1-7B (best-of-4). This may be useful for downstream tasks such as vision-language-action (VLA) models, where even small artifacts can significantly affect perception and action.</p>
+        <figure style="text-align: center;">
+            <img src="assets/items/table_robot.png" alt="Table Robot" style="width: min(50%, 100vw - 2rem); min-width: min(20rem, 100%);">
+            <figcaption class="caption"><b>PAI-Bench-G</b> evaluation results on robotics I2V generaiton. Grasp and Robot-QA are measure by Gemini 3 Flash.</figcaption>
+        </figure>
+
+        <!-- Robot Video Comparison Carousel: 2 slides for cosmos and wani2v -->
+        <div class="video-carousel" data-carousel="robot">
+            <button class="carousel-btn left" onclick="moveCarousel('robot', -1)">&#10094;</button>
+            <button class="carousel-btn right" onclick="moveCarousel('robot', 1)">&#10095;</button>
+            <div class="video-carousel-track" id="carousel-robot">
+                <!-- Slide 1: Cosmos -->
+                <div class="motion-compare-slide">
+                    <h4 style="text-align: center; margin-bottom: var(--space-sm);">Cosmos-Predict2.5-2B</h4>
+                    <div class="robot-compare-grid-3x3">
+                        <div class="ours-row-wrapper">
+                            <p class="row-label">Ours</p>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/cosmos/ours/robot_008.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/cosmos/ours/robot_028.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/cosmos/ours/robot_064.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                        </div>
+                        <div class="base-row-wrapper">
+                            <p class="row-label">Base</p>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/cosmos/base/robot_008.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/cosmos/bon/robot_028.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/cosmos/base/robot_064.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                        </div>
+                        <div class="bon-row-wrapper">
+                            <p class="row-label">Rejection Sampling (best-of-4)</p>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/cosmos/bon/robot_008.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/cosmos/base/robot_028.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/cosmos/bon/robot_064.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prompt-grid-3">
+                        <p class="video-prompt">... A robotic arm enters the frame from the left, <span style="color:blue;">lifting the spoon</span> smoothly and deliberately. It moves the spoon across the countertop, <span style="color:blue;">placing it down to the right of the pot</span>...</p>
+                        <p class="video-prompt">... As the video progresses, the robotic arm descends towards the metallic bowl, gripping it with its claw-like mechanism. <span style="color:blue;">It lifts the bowl slightly off the surface, rotates it briefly, and then places it down on the blue cloth at the right side.</span> The robotic arm then retracts, moving back to the initial state. The scene concludes with the metallic bowl now positioned on the blue cloth...</p>
+                        <p class="video-prompt">... As the video progresses, the robotic arm on the left lifts the bread off the wicker basket one by one and <span style="color:blue;">places them into the toaster.</span> Simultaneously, <span style="color:red;">the robotic arm on the right pushes the toast lever [Failure]</span> ...</p>
+                    </div>
+                </div>
+                <!-- Slide 2: Wan I2V -->
+                <div class="motion-compare-slide">
+                    <h4 style="text-align: center; margin-bottom: var(--space-sm);">Wan2.2-A14B-I2V</h4>
+                    <div class="robot-compare-grid-3x3">
+                        <div class="ours-row-wrapper">
+                            <p class="row-label">Ours</p>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/wani2v/ours/robot_058.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/wani2v/ours/robot_071.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/wani2v/ours/robot_074.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                        </div>
+                        <div class="base-row-wrapper">
+                            <p class="row-label">Base</p>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/wani2v/base/robot_058.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/wani2v/base/robot_071.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/wani2v/base/robot_074.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                        </div>
+                        <div class="bon-row-wrapper">
+                            <p class="row-label">Rejection Sampling (best-of-4)</p>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/wani2v/bon/robot_058.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/wani2v/bon/robot_071.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/wani2v/bon/robot_074.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prompt-grid-3">
+                        <p class="video-prompt">... The right robotic arm moves towards the shelf, <span style="color:blue;">picks up a single rectangular box, and places it in the shopping cart</span>...</p>
+                        <p class="video-prompt">... <span style="color:blue;">The robotic arm on the right approaches the red-capped bottle, extending its gripper towards it</span>. Gradually, the gripper closes around the bottle, lifting it slightly off the surface. The other robotic arm remains stationary. By the final frame, the robotic arm has successfully lifted the red-capped bottle, holding it securely in its gripper and <span style="color:blue;">transferring it to the left robotic arm</span>. <span style="color:red;">The scene concludes with the bottle being placed into the teal bowl [Failure]</span>, while the other objects remain in their original positions...</p>
+                        <p class="video-prompt">... A robotic arm with black and metallic components is positioned on the left side of the frame, extending towards the paper bag. The robotic arm then moves closer to the bag, extending its claw-like appendages towards it, indicating an intention to interact with the bag, possibly to pick it up or manipulate it. <span style="color:blue;">The left robotic arm holds the bag steady</span>, while the <span style="color:blue;">right robotic arm places the items into the bag</span>, demonstrating precision and control...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </section>
+    <section>
+        <h2>Additional Results</h2>
+        <p>See more results in our paper!
+            <div class="video-grid-three">
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/videos/etc/14.mp4" type="video/mp4">
+                </video>
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/videos/etc/spatial1.mp4" type="video/mp4">
+                </video>
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/videos/etc/graph_ours.mp4" type="video/mp4">
+                </video>
+            </div>
+        </p>
+    </section>
+    <section id="bibtex">
+        <h2>Citation</h2>
+        <hr>
+        <pre><code>@article{jang2026selfrefining,
+    title={Self-Refining Video Sampling}, 
+    author={Sangwon Jang and Taekyung Ki and Jaehyeong Jo and Saining Xie and Jaehong Yoon and Sung Ju Hwang},
+    year={2026},
+    journal={arXiv preprint arXiv:2601.18577},
+}
+            <!-- @article{ki2026avatar,
+    title={Avatar Forcing: Real-Time Interactive Head Avatar Generation for Natural Conversation},
+    author={Ki, Taekyung and Jang, Sangwon and Jo, Jaehyeong and Yoon, Jaehong and Hwang, Sung Ju},
+    journal={arXiv preprint arXiv:2601.00664},
+    year={2026}
+} -->
+</code></pre>
+
+    </section>
+    <section>
+        <h2>Acknowledgement</h2>
+        <hr> <p>This page is based on <a href="https://sihyun.me/REPA/">REPA</a> and <a href="https://dream2flow.github.io/">Dream2Flow</a>.</p>
+    </section>
+
+</div>
+</body>
+</html>
