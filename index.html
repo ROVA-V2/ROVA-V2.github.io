@@ -19,6 +19,7 @@
             padding: 2rem 1rem;
         }
 
+        /* 学术容器：最大宽度，居中，类似期刊排版 */
         .academic-container {
             max-width: 1100px;
             margin: 0 auto;
@@ -35,6 +36,7 @@
             }
         }
 
+        /* 头部 + 摘要区域 */
         .paper-header {
             border-bottom: 2px solid #2c3e66;
             margin-bottom: 2rem;
@@ -83,6 +85,7 @@
             margin-bottom: 0;
         }
 
+        /* 图表垂直排列：每个figure独立成行 */
         .figures-vertical {
             display: flex;
             flex-direction: column;
@@ -182,6 +185,7 @@
             text-decoration: underline;
         }
 
+        /* 模态框 (点击放大) 学术轻量化实现 */
         .modal {
             display: none;
             position: fixed;
@@ -252,6 +256,7 @@
             }
         }
 
+        /* 引用和footer */
         .supplementary-note {
             margin-top: 3rem;
             padding-top: 1rem;
@@ -272,6 +277,7 @@
             font-family: monospace;
         }
 
+        /* 响应细节 */
         .small-note {
             font-size: 0.75rem;
             color: #5e728b;
@@ -299,58 +305,60 @@
     </div>
 
     <div class="abstract">
-        <p><strong>Abstract —</strong> Standard Video-LLMs exhibit brittle failures when confronted with concurrent real-world distortions (motion blur, glare, occlusion). We introduce <strong>Robust-TO</strong>, a three‑stage pipeline that explicitly models per‑frame quality, disturbance‑aware tool routing, and confidence‑weighted evidence synthesis. The following figures illustrate the core mechanisms: <em>per‑frame quality profiling & trustworthy frame selection</em>, <em>disturbance‑aware tool routing</em>, and <em>confidence‑weighted three‑tier evidence synthesis</em>. Compared to naive Video-LLM baselines, Robust-TO reliably answers queries even under severe degradation (see <strong>Figure 3</strong>). Click any figure to enlarge — PDF source files are also available via the “⛶ Open PDF” links.</p>
+        <p><strong>Abstract —</strong> Standard Video-LLMs exhibit brittle failures when confronted with concurrent real-world distortions (motion blur, glare, occlusion). We introduce <strong>Robust-TO</strong>, a three‑stage pipeline that explicitly models per‑frame quality, disturbance‑aware tool routing, and confidence‑weighted evidence synthesis. The following figures illustrate the core mechanisms: <em>per‑frame quality profiling & trustworthy frame selection</em>, <em>disturbance‑aware tool routing</em>, and <em>confidence‑weighted three‑tier evidence synthesis</em>. Compared to naive Video-LLM baselines, Robust-TO reliably answers queries even under severe degradation (see <strong>Figure 3</strong>). Click any figure to enlarge — PDF source files are also available via the “⛶ Open PDF” links.</p>
         <p style="font-size:0.85rem; margin-top:0.4rem;"><strong>Keywords</strong> —  Video understanding · robust perception · multi-modal LLM · uncertainty quantification · disturbance-aware routing</p>
     </div>
 
+    <!-- 三张图垂直布局：一张图一行，彻底摒弃并排 -->
     <div class="figures-vertical">
         
-        <!-- Figure 1: System Architecture Overview -->
+        <!-- Figure 1: Overview of Robust-TO pipeline (per-frame quality + tool routing + synthesis) -->
         <div class="figure-card" id="fig1">
             <div class="figure-label">Figure 1 | System Architecture Overview</div>
             <div class="figure-visual" data-img-src="assets/framework.png" data-pdf-src="assets/framework.pdf">
-                <img src="assets/framework.png" alt="Robust-TO pipeline overview: from per-frame quality profiling to three-tier evidence synthesis" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22800%22%20height%3D%22400%22%20viewBox%3D%220%200%20800%20400%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23f0f4f9%22%2F%3E%3Ctext%20x%3D%2240%22%20y%3D%22200%22%20font-family%3D%22monospace%22%20font-size%3D%2216%22%20fill%3D%22%23344e6c%22%3E%5BPlaceholder%5D%20Convert%20framework.pdf%20to%20framework.png%3C%2Ftext%3E%3C%2Fsvg%3E';">
+                <!-- 实际图片资源: 建议将 framework.pdf 转换为 framework.png (或使用高分辨率导出) -->
+                <img src="assets/framework.png" alt="Robust-TO pipeline overview: from per-frame quality profiling to three-tier evidence synthesis" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22800%22%20height%3D%22400%22%20viewBox%3D%220%200%20800%20400%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23f0f4f9%22%2F%3E%3Ctext%20x%3D%2240%22%20y%3D%22200%22%20font-family%3D%22monospace%22%20font-size%3D%2216%22%20fill%3D%22%23344e6c%22%3E%5BPlaceholder%5D%20Please%20replace%20with%20framework.png%20(convert%20from%20framework.pdf)%3C%2Ftext%3E%3C%2Fsvg%3E'; this.alt='Image placeholder: convert framework.pdf to PNG';">
             </div>
             <div class="caption-wrapper">
-                <div class="fig-title">Per‑frame quality profiling & trustworthy frame selection → disturbance‑aware tool routing</div>
+                <div class="fig-title">📐 Per‑frame quality profiling & trustworthy frame selection → disturbance‑aware tool routing</div>
                 <div class="fig-caption">
                     <strong>Illustration (a).</strong> The Robust-TO pipeline integrates three sequential modules: 
                     (i) <em>Quality Profiler</em> estimates blur, brightness, and occlusion per frame; 
                     (ii) <em>Disturbance‑Aware Router</em> selectively invokes specialized tools (e.g., deblurring, enhancement) based on predicted degradation; 
                     (iii) <em>Confidence‑Weighted Synthesizer</em> fuses multi‑source evidence into a final answer. 
-                    Gray arrows indicate fallback paths when confidence is low.
+                    Gray arrows indicate fallback paths when confidence is low. 
                 </div>
                 <a class="pdf-link" href="assets/framework.pdf" target="_blank" rel="noopener noreferrer">📄 Open PDF (vector graphic) &nbsp;⛶</a>
-                <div class="small-note">Click the image to enlarge; PDF opens in a new tab.</div>
+                <div class="small-note">*Click the image to enlarge; PDF opens in a new tab.</div>
             </div>
         </div>
 
-        <!-- Figure 2: Disturbance-Aware Frame Selection -->
+        <!-- Figure 2: Disturbance-Aware Frame Selection (per-frame quality suppression) -->
         <div class="figure-card" id="fig2">
             <div class="figure-label">Figure 2 | Disturbance‑Aware Frame Selection</div>
             <div class="figure-visual" data-img-src="assets/_framework.png" data-pdf-src="assets/_framework.pdf">
                 <img src="assets/_framework.png" alt="Per-frame quality profiling: blur, brightness, occlusion map; corrupted frames are suppressed before perception tools are invoked" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22800%22%20height%3D%22400%22%20viewBox%3D%220%200%20800%20400%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23f0f4f9%22%2F%3E%3Ctext%20x%3D%2240%22%20y%3D%22200%22%20font-family%3D%22monospace%22%20font-size%3D%2216%22%20fill%3D%22%23344e6c%22%3E%5BPlaceholder%5D%20Convert%20_framework.pdf%20to%20_framework.png%3C%2Ftext%3E%3C%2Fsvg%3E';">
             </div>
             <div class="caption-wrapper">
-                <div class="fig-title">Suppressing corrupted frames before any high‑level perception</div>
+                <div class="fig-title">⚠️ Suppressing corrupted frames before any high‑level perception</div>
                 <div class="fig-caption">
                     <strong>Illustration (b).</strong> For each frame, Robust-TO computes a quality vector <strong>(Q<sub>blur</sub>, Q<sub>bright</sub>, Q<sub>occl</sub>)</strong>. 
                     Frames that fall below an adaptive threshold are omitted from the evidence pool, preventing noisy input from contaminating reasoning. 
                     The schematic shows original video frames (top) vs. selected trustworthy frames (bottom) — frames with heavy motion blur or glare are discarded, preserving only reliable visual tokens.
                 </div>
                 <a class="pdf-link" href="assets/_framework.pdf" target="_blank" rel="noopener noreferrer">📄 Open PDF (detailed selection maps) &nbsp;⛶</a>
-                <div class="small-note">Click image to magnify selection criteria; green frames = retained, red = suppressed.</div>
+                <div class="small-note">*Click image to magnify selection criteria; green frames = retained, red = suppressed.</div>
             </div>
         </div>
 
-        <!-- Figure 3: Confidence-weighted three-tier evidence synthesis & full pipeline result -->
+        <!-- Figure 3: Confidence-weighted three-tier evidence synthesis & full pipeline result comparison -->
         <div class="figure-card" id="fig3">
             <div class="figure-label">Figure 3 | Confidence‑Weighted Synthesis & Benchmark Victory</div>
             <div class="figure-visual" data-img-src="assets/main_results.png" data-pdf-src="assets/main_results.png">
                 <img src="assets/main_results.png" alt="Full pipeline result: Robust-TO correctly answers queries under concurrent motion blur, glare, occlusion where standard Video-LLMs fail silently" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22800%22%20height%3D%22400%22%20viewBox%3D%220%200%20800%20400%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23f0f4f9%22%2F%3E%3Ctext%20x%3D%2240%22%20y%3D%22200%22%20font-family%3D%22monospace%22%20font-size%3D%2216%22%20fill%3D%22%23344e6c%22%3E%5BPlaceholder%5D%20main_results.png%20expected%3C%2Ftext%3E%3C%2Fsvg%3E';">
             </div>
             <div class="caption-wrapper">
-                <div class="fig-title">Three‑Tier Evidence Synthesis & Robustness Gain</div>
+                <div class="fig-title">🏆 Three‑Tier Evidence Synthesis & Robustness Gain</div>
                 <div class="fig-caption">
                     <strong>Illustration (c).</strong> All extracted facts are grouped into <strong>HIGH / MEDIUM / LOW</strong> confidence tiers. 
                     Conflicting low‑confidence claims are automatically discarded when they contradict high‑confidence observations. 
@@ -359,7 +367,7 @@
                     Bottom example: given a query “What color is the ball after the occlusion?”, only Robust‑TO correctly outputs “red”; baselines hallucinate “blue” or “unknown”.
                 </div>
                 <a class="pdf-link" href="assets/main_results.png" target="_blank" rel="noopener noreferrer">🖼️ Open full resolution PNG &nbsp;⛶</a>
-                <div class="small-note">Click the figure to zoom into the evidence‑synthesis diagram and performance table.</div>
+                <div class="small-note">*Click the figure to zoom into the evidence‑synthesis diagram and performance table.</div>
             </div>
         </div>
     </div>
@@ -374,6 +382,7 @@
     </div>
 </div>
 
+<!-- 模态框：点击任何图像放大（轻量学术级模态） -->
 <div id="lightboxModal" class="modal">
     <span class="close-modal" id="closeModalBtn">&times;</span>
     <div class="modal-content" id="modalContent">
@@ -383,11 +392,13 @@
 
 <script>
     (function() {
+        // 获取所有可点击放大的图像容器 (每个 .figure-visual 里面的 img)
         const visualDivs = document.querySelectorAll('.figure-visual');
         const modal = document.getElementById('lightboxModal');
         const modalImg = document.getElementById('modalImage');
         const closeBtn = document.getElementById('closeModalBtn');
 
+        // 为每个 visual 里的 img 添加点击事件 (点击图片区域放大)
         visualDivs.forEach(div => {
             const imgElem = div.querySelector('img');
             if (imgElem) {
@@ -395,21 +406,25 @@
                 imgElem.addEventListener('click', (e) => {
                     e.stopPropagation();
                     let highResSrc = imgElem.getAttribute('src');
+                    // 如果有 data-img-src 属性优先使用该地址（高阶原图）
                     const dataImgSrc = div.getAttribute('data-img-src');
                     if (dataImgSrc && dataImgSrc !== '') {
                         highResSrc = dataImgSrc;
                     }
+                    // 若图片是placeholder或出错，依然显示实际设置的src (但建议用户替换)
                     modalImg.src = highResSrc;
                     modal.style.display = 'flex';
                     document.body.style.overflow = 'hidden';
                 });
             }
+            // 可选：点击卡片中的其他部分（如空白区域）不做放大；但是用户体验良好，只对图像有效
         });
 
+        // 关闭模态框：点击背景或者关闭按钮
         function closeModal() {
             modal.style.display = 'none';
             document.body.style.overflow = '';
-            modalImg.src = '';
+            modalImg.src = '';  // 清空避免残留
         }
 
         modal.addEventListener('click', (e) => {
@@ -418,12 +433,14 @@
             }
         });
         closeBtn.addEventListener('click', closeModal);
+        // ESC 键关闭
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && modal.style.display === 'flex') {
                 closeModal();
             }
         });
 
+        // 增强说明：为图卡增加hover时提示（可选）
         const allCards = document.querySelectorAll('.figure-card');
         allCards.forEach(card => {
             const imgDiv = card.querySelector('.figure-visual img');
@@ -431,15 +448,25 @@
                 imgDiv.setAttribute('title', 'Click to enlarge');
             }
         });
-
+        
+        // 修复PDF链接额外提示 和 对未替换图片的友好警告（仅console）
         const images = document.querySelectorAll('.figure-visual img');
-        images.forEach((img) => {
+        images.forEach((img, idx) => {
             img.addEventListener('error', function(e) {
-                console.warn(`[Robust-TO] Image load error: ${img.src}. Please convert PDF to PNG and update the src path.`);
+                console.warn(`[Robust-TO] Image load error: ${img.src}. Please convert PDF to PNG (e.g., using pdf2image) and update the src path.`);
+                // 不破坏布局，显示占位文本（已经通过onerror设定内联占位）
             });
         });
     })();
 </script>
 
+<!-- 注意：
+     1. 实际部署时，请将 assets/framework.pdf 导出为高分辨率 PNG，并命名为 assets/framework.png；
+        assets/_framework.pdf 导出为 assets/_framework.png；
+        assets/main_results.png 已经为 PNG 格式，确保路径正确。
+     2. 若 PDF 无法预览，点击 “Open PDF” 链接可直接下载/打开。
+     3. 所有图片点击均可放大模态框，效果学术且清爽。
+     4. 布局严格遵守“三张图，一张图就是一行visualization”且无并排。
+-->
 </body>
 </html>
