@@ -2,1008 +2,690 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Robust-TO: Confidence-Aware Tool Orchestration for Robust Video Understanding</title>
-  <meta name="description" content="Robust-TO integrates per-frame trustworthiness into agentic video reasoning, solving the Blind Trust Problem with +10.6 pts average accuracy gain." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Robust-TO | Confidence-Aware Tool Orchestration for Robust Video Understanding</title>
+  <meta name="description" content="Robust-TO solves the Blind Trust Problem in Video-LLMs by integrating per‑frame trustworthiness into agentic reasoning, achieving +10.6 avg accuracy gain and graceful degradation under real-world corruptions." />
+  <meta name="keywords" content="Robust-TO, video understanding, blind trust problem, GRPO, tool orchestration, robustness, Video-LLM" />
+  <meta name="author" content="He, Choi, Yoon" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%231d4ed8'/%3E%3Cpath fill='white' d='M10 12h12v2H10zm0 4h8v2h-8zm0 4h10v2H10z'/%3E%3C/svg%3E" />
   <meta property="og:title" content="Robust-TO: Confidence-Aware Tool Orchestration for Robust Video Understanding" />
+  <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
   <style>
-    /* ═══════ TOKENS ═══════ */
-    :root {
-      --bg:        #f8f6f1;
-      --bg2:       #ffffff;
-      --bg3:       #f1ede5;
-      --border:    #e2ddd6;
-      --border2:   #ccc8c0;
-      --text:      #1c1917;
-      --text2:     #57534e;
-      --text3:     #a8a29e;
-      --blue:      #1d4ed8;
-      --blue-lt:   #eff6ff;
-      --blue-mid:  #bfdbfe;
-      --green:     #15803d;
-      --green-lt:  #f0fdf4;
-      --red:       #b91c1c;
-
-      --radius-sm: 6px;
-      --radius:    12px;
-      --radius-lg: 18px;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.05);
-      --shadow:    0 4px 12px rgba(0,0,0,.08), 0 1px 3px rgba(0,0,0,.05);
-      --shadow-lg: 0 12px 40px rgba(0,0,0,.1), 0 2px 8px rgba(0,0,0,.05);
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; font-size: 16px; }
+    :root {
+      /* light modern palette */
+      --bg: #fdfbf8;
+      --surface: #ffffff;
+      --surface-alt: #f6f4f0;
+      --border: #ece8e2;
+      --border-strong: #d6d0c8;
+      --text: #1e1b18;
+      --text-soft: #4a4642;
+      --text-muted: #8a8580;
+      --accent: #1f4fcf;
+      --accent-dark: #0a3a9e;
+      --accent-glow: rgba(31, 79, 207, 0.08);
+      --accent-soft: #eef3fe;
+      --green: #1f7b4d;
+      --green-soft: #eafaf2;
+      --amber: #b65e00;
+      --radius-sm: 8px;
+      --radius: 16px;
+      --radius-lg: 28px;
+      --shadow-xs: 0 1px 2px rgba(0,0,0,0.03), 0 1px 1px rgba(0,0,0,0.02);
+      --shadow-sm: 0 2px 6px rgba(0,0,0,0.03), 0 4px 12px rgba(0,0,0,0.03);
+      --shadow-md: 0 8px 28px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.02);
+      --shadow-lg: 0 20px 40px -12px rgba(0,0,0,0.1);
+    }
 
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-weight: 400;
-      line-height: 1.7;
+      font-family: 'Inter', sans-serif;
+      line-height: 1.5;
+      scroll-behavior: smooth;
     }
 
-    /* ═══════ LAYOUT ═══════ */
-    .wrap {
-      max-width: 860px;
+    .container {
+      max-width: 1120px;
       margin: 0 auto;
       padding: 0 28px;
     }
 
-    /* ═══════ NAV ═══════ */
-    nav {
+    /* typography */
+    h1, h2, h3 {
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    h1 {
+      font-family: 'Source Serif 4', serif;
+      font-size: clamp(2.2rem, 5vw, 3.2rem);
+      font-weight: 600;
+      line-height: 1.2;
+      background: linear-gradient(135deg, #1e1b18 0%, #2b2a27 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      margin-bottom: 1.5rem;
+    }
+
+    h2 {
+      font-family: 'Source Serif 4', serif;
+      font-size: clamp(1.6rem, 3.5vw, 2.1rem);
+      margin-bottom: 1rem;
+      letter-spacing: -0.01em;
+    }
+
+    .section-tag {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-soft);
+      padding: 2px 10px;
+      border-radius: 30px;
+      margin-bottom: 1rem;
+      font-weight: 500;
+    }
+
+    p {
+      color: var(--text-soft);
+      font-size: 1rem;
+      line-height: 1.65;
+      margin-bottom: 1rem;
+      max-width: 72ch;
+    }
+
+    /* nav */
+    .navbar {
       position: sticky;
       top: 0;
       z-index: 100;
-      background: rgba(248, 246, 241, 0.88);
+      background: rgba(253, 251, 248, 0.92);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
+      transition: all 0.2s;
     }
 
     .nav-inner {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 12px 28px;
+      flex-wrap: wrap;
+      padding: 0.75rem 0;
     }
 
-    .nav-title {
+    .logo {
       font-weight: 600;
-      font-size: 0.85rem;
-      color: var(--text2);
+      font-size: 1.1rem;
+      background: var(--accent);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: var(--accent);
     }
 
     .nav-links {
       display: flex;
-      gap: 24px;
+      gap: 2rem;
       list-style: none;
     }
 
     .nav-links a {
-      font-size: 0.82rem;
-      color: var(--text2);
       text-decoration: none;
-      transition: color .2s;
-    }
-    .nav-links a:hover { color: var(--blue); }
-
-    /* ═══════ HERO ═══════ */
-    header {
-      padding: 72px 0 56px;
-    }
-
-    h1 {
-      font-family: 'Lora', serif;
-      font-size: clamp(1.7rem, 3.8vw, 2.7rem);
-      font-weight: 600;
-      line-height: 1.25;
-      color: var(--text);
-      margin-bottom: 20px;
-      letter-spacing: -.01em;
-    }
-
-    /* ═══════ AUTHORS ═══════ */
-    .authors-block {
-      margin-bottom: 32px;
-    }
-
-    .authors-line {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px 2px;
-      margin-bottom: 10px;
-    }
-
-    .author-name {
-      font-size: 0.97rem;
+      font-size: 0.85rem;
       font-weight: 500;
-      color: var(--text);
+      color: var(--text-soft);
+      transition: color 0.2s;
     }
 
-    .author-sep { color: var(--border2); }
-
-    sup.num {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: .6em;
-      color: var(--blue);
-      margin-left: 1px;
+    .nav-links a:hover {
+      color: var(--accent);
     }
 
-    sup.cor {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: .6em;
-      color: var(--text3);
-      margin-left: 1px;
-    }
-
-    .affiliations {
+    /* buttons */
+    .btn-group {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px 20px;
-      font-size: 0.82rem;
-      color: var(--text2);
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    .aff sup { color: var(--blue); margin-right: 3px; }
-
-    .contact-line {
-      margin-top: 8px;
-      font-size: 0.8rem;
-      color: var(--text3);
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    .contact-line a { color: var(--text2); text-decoration: none; }
-    .contact-line a:hover { color: var(--blue); }
-
-    /* ═══════ BUTTONS ═══════ */
-    .btn-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 0;
+      gap: 12px;
+      margin: 1.5rem 0 0.5rem;
     }
 
     .btn {
       display: inline-flex;
       align-items: center;
-      gap: 7px;
-      padding: 9px 20px;
-      border-radius: var(--radius-sm);
-      font-size: 0.85rem;
+      gap: 8px;
+      padding: 0.7rem 1.5rem;
+      border-radius: 60px;
       font-weight: 500;
+      font-size: 0.85rem;
       text-decoration: none;
-      cursor: pointer;
-      transition: all .18s;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-soft);
     }
 
     .btn-primary {
-      background: var(--blue);
-      color: #fff;
-      border-color: var(--blue);
-    }
-    .btn-primary:hover { background: #1e40af; transform: translateY(-1px); box-shadow: var(--shadow); }
-
-    .btn-ghost {
-      background: var(--bg2);
-      color: var(--text2);
-      border-color: var(--border);
-    }
-    .btn-ghost:hover { border-color: var(--blue); color: var(--blue); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
-
-    .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
-
-    /* ═══════ DIVIDER ═══════ */
-    .divider {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 0;
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+      box-shadow: var(--shadow-xs);
     }
 
-    /* ═══════ SECTIONS ═══════ */
-    section { padding: 64px 0; }
-
-    .section-tag {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.7rem;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: var(--blue);
-      margin-bottom: 12px;
-      display: block;
+    .btn-primary:hover {
+      background: var(--accent-dark);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
     }
 
-    h2 {
-      font-family: 'Lora', serif;
-      font-size: clamp(1.3rem, 2.5vw, 1.9rem);
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 20px;
-      line-height: 1.3;
+    .btn-ghost:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-2px);
     }
 
-    p {
-      font-size: 0.97rem;
-      color: var(--text2);
-      line-height: 1.75;
-      margin-bottom: 14px;
-      max-width: 720px;
-    }
-
-    p:last-child { margin-bottom: 0; }
-
-    strong { color: var(--text); font-weight: 600; }
-
-    code {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.83em;
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      padding: 1px 6px;
-      border-radius: 4px;
-      color: var(--text);
-    }
-
-    /* ═══════ HIGHLIGHT BOX ═══════ */
-    .highlight-box {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--blue);
-      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-      padding: 20px 24px;
-      margin: 28px 0;
-    }
-
-    .highlight-box p {
-      color: var(--text);
-      font-size: 1rem;
-      margin: 0;
-      line-height: 1.7;
-    }
-
-    /* ═══════ STATS ═══════ */
-    .stats-row {
+    /* cards & stats */
+    .stats-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 1px;
       background: var(--border);
-      border: 1px solid var(--border);
       border-radius: var(--radius);
       overflow: hidden;
-      margin: 36px 0;
+      margin: 2.5rem 0;
+      border: 1px solid var(--border);
     }
 
-    .stat {
-      background: var(--bg2);
-      padding: 24px 20px;
+    .stat-card {
+      background: var(--surface);
+      padding: 1.8rem 1rem;
       text-align: center;
     }
 
-    .stat-n {
-      font-family: 'Lora', serif;
-      font-size: 2.2rem;
-      font-weight: 600;
-      color: var(--blue);
+    .stat-number {
+      font-family: 'Source Serif 4', serif;
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--accent);
       line-height: 1;
-      display: block;
-      margin-bottom: 6px;
     }
 
-    .stat-l {
-      font-size: 0.78rem;
-      color: var(--text3);
-      font-family: 'JetBrains Mono', monospace;
-      line-height: 1.4;
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-top: 0.5rem;
     }
 
-    /* ═══════ DEMO GRID ═══════ */
-    .demo-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-      margin: 28px 0 0;
-    }
-
-    .demo-card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
+    .highlight-box {
+      background: var(--surface);
+      border-left: 4px solid var(--accent);
       border-radius: var(--radius);
-      overflow: hidden;
+      padding: 1.5rem 2rem;
+      margin: 2rem 0;
       box-shadow: var(--shadow-sm);
-      transition: box-shadow .2s, transform .2s, border-color .2s;
-      cursor: pointer;
-    }
-
-    .demo-card:hover {
-      box-shadow: var(--shadow);
-      transform: translateY(-3px);
-      border-color: var(--blue);
-    }
-
-    .demo-card img {
-      width: 100%;
-      aspect-ratio: 16/10;
-      object-fit: cover;
-      display: block;
-      background: var(--bg3);
-    }
-
-    .demo-card-body { padding: 14px 16px 16px; }
-
-    .demo-card-title {
-      font-size: 0.88rem;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-
-    .demo-card-desc {
-      font-size: 0.78rem;
-      color: var(--text3);
-      line-height: 1.5;
-    }
-
-    .demo-note {
-      font-size: 0.8rem;
-      color: var(--text3);
-      font-style: italic;
-      margin-top: 12px;
-    }
-
-    /* ═══════ LIGHTBOX ═══════ */
-    .lightbox {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(28, 25, 23, 0.75);
-      backdrop-filter: blur(8px);
-      z-index: 200;
-      align-items: center;
-      justify-content: center;
-    }
-    .lightbox.open { display: flex; }
-
-    .lightbox img {
-      max-width: 90vw;
-      max-height: 88vh;
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-lg);
-    }
-
-    .lb-close {
-      position: fixed;
-      top: 20px; right: 24px;
-      background: var(--bg2);
       border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      width: 38px; height: 38px;
-      font-size: 1rem;
-      color: var(--text2);
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: all .18s;
+      border-left-width: 4px;
     }
-    .lb-close:hover { color: var(--text); border-color: var(--blue); }
 
-    /* ═══════ METHOD CARDS ═══════ */
     .method-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-      margin: 28px 0;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+      margin: 2rem 0;
     }
 
-    .mc {
-      background: var(--bg2);
+    .method-card {
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 22px 22px 24px;
-      box-shadow: var(--shadow-sm);
+      padding: 1.5rem;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
 
-    .mc-icon {
-      width: 36px; height: 36px;
-      border-radius: var(--radius-sm);
-      background: var(--blue-lt);
-      border: 1px solid var(--blue-mid);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1rem;
-      margin-bottom: 12px;
+    .method-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-strong);
     }
 
-    .mc h3 {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 8px;
+    .method-icon {
+      font-size: 1.8rem;
+      margin-bottom: 0.8rem;
     }
 
-    .mc p { font-size: 0.83rem; max-width: 100%; }
+    .method-card h3 {
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
 
-    /* ═══════ RESULT TABLE-LIKE BOX ═══════ */
-    .result-box {
-      background: var(--bg2);
+    .result-table {
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       overflow: hidden;
-      margin: 24px 0;
-      box-shadow: var(--shadow-sm);
+      margin: 1.5rem 0;
     }
 
-    .result-box-header {
-      background: var(--bg3);
-      border-bottom: 1px solid var(--border);
-      padding: 12px 20px;
+    .result-header {
+      background: var(--surface-alt);
+      padding: 0.8rem 1.5rem;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.75rem;
-      color: var(--text2);
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
     }
-
-    .result-box-body { padding: 20px; }
 
     .result-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 9px 0;
+      padding: 0.7rem 1.5rem;
       border-bottom: 1px solid var(--border);
-      font-size: 0.88rem;
+      font-size: 0.9rem;
     }
-    .result-row:last-child { border-bottom: none; }
 
-    .result-method { color: var(--text); font-weight: 500; }
-    .result-method.ours { color: var(--blue); font-weight: 600; }
-
-    .result-score {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.88rem;
-      color: var(--text2);
+    .result-row:last-child {
+      border-bottom: none;
     }
-    .result-score.ours { color: var(--blue); font-weight: 600; }
-    .result-score.best { color: var(--green); }
 
-    /* ═══════ PDF VIEWER ═══════ */
-    .pdf-shell {
+    .result-method {
+      font-weight: 500;
+    }
+
+    .ours-method {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .best-score {
+      color: var(--green);
+      font-weight: 600;
+    }
+
+    /* demo cards (modern fallback) */
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+
+    .demo-card {
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       overflow: hidden;
-      margin: 24px 0;
-      box-shadow: var(--shadow-sm);
-      background: var(--bg2);
+      transition: all 0.25s;
+      cursor: pointer;
     }
 
-    .pdf-bar {
-      background: var(--bg3);
-      border-bottom: 1px solid var(--border);
-      padding: 11px 18px;
+    .demo-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--accent);
+    }
+
+    .demo-img {
+      background: linear-gradient(145deg, #f0ede8, #e9e5df);
+      height: 170px;
       display: flex;
       align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .demo-body {
+      padding: 1rem 1.2rem 1.2rem;
+    }
+
+    .demo-title {
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+    }
+
+    .demo-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* pdf embed */
+    .pdf-embed {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin: 1.8rem 0;
+      overflow: hidden;
+    }
+
+    .pdf-toolbar {
+      background: var(--surface-alt);
+      padding: 0.8rem 1.2rem;
+      display: flex;
       justify-content: space-between;
-      font-family: 'JetBrains Mono', monospace;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
       font-size: 0.75rem;
-      color: var(--text2);
+      font-family: monospace;
     }
 
-    .pdf-dots { display: flex; gap: 6px; }
-    .pdf-dot { width: 10px; height: 10px; border-radius: 50%; }
-
-    .pdf-bar a {
-      color: var(--blue);
-      text-decoration: none;
-      font-size: 0.75rem;
-    }
-    .pdf-bar a:hover { text-decoration: underline; }
-
-    i {
-      display: block;
+    iframe {
       width: 100%;
       height: 620px;
       border: none;
+      display: block;
     }
 
-    /* ═══════ CITATION ═══════ */
+    /* cite */
     .cite-box {
-      background: var(--bg2);
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      overflow: hidden;
-      margin-top: 20px;
+      margin-top: 1.2rem;
     }
 
-    .cite-bar {
-      background: var(--bg3);
-      border-bottom: 1px solid var(--border);
-      padding: 10px 18px;
+    .cite-header {
+      background: var(--surface-alt);
+      padding: 0.7rem 1.2rem;
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
     }
 
-    .cite-bar-label {
+    pre {
+      padding: 1.2rem;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.72rem;
-      color: var(--text2);
-      letter-spacing: .06em;
+      font-size: 0.8rem;
+      overflow-x: auto;
+      background: var(--surface);
+      color: var(--text-soft);
     }
 
     .copy-btn {
       background: none;
       border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text2);
-      font-family: 'JetBrains Mono', monospace;
+      padding: 0.2rem 0.8rem;
+      border-radius: 40px;
       font-size: 0.7rem;
-      padding: 3px 12px;
+      font-family: monospace;
       cursor: pointer;
-      transition: all .18s;
-    }
-    .copy-btn:hover { border-color: var(--blue); color: var(--blue); }
-    .copy-btn.ok { border-color: var(--green); color: var(--green); }
-
-    pre {
-      padding: 18px 20px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.8rem;
-      color: var(--text2);
-      line-height: 1.9;
-      overflow-x: auto;
-      background: transparent;
+      transition: 0.2s;
     }
 
-    pre .kw { color: var(--blue); }
-    pre .val { color: var(--green); }
+    .copy-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
 
-    /* ═══════ FOOTER ═══════ */
     footer {
       border-top: 1px solid var(--border);
-      padding: 36px 0;
+      padding: 2rem 0;
       text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
     }
 
-    footer p {
-      font-size: 0.82rem;
-      color: var(--text3);
-      max-width: 100%;
-      text-align: center;
-      margin-bottom: 0;
+    @media (max-width: 720px) {
+      .method-grid, .demo-grid {
+        grid-template-columns: 1fr;
+      }
+      .nav-links {
+        gap: 1.2rem;
+      }
+      .btn-group {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .btn {
+        justify-content: center;
+      }
+      iframe {
+        height: 380px;
+      }
     }
 
-    footer a { color: var(--text2); text-decoration: none; }
-    footer a:hover { color: var(--blue); }
-
-    /* ═══════ RESPONSIVE ═══════ */
-    @media (max-width: 680px) {
-      header { padding: 48px 0 40px; }
-      .stats-row { grid-template-columns: 1fr; }
-      .method-grid { grid-template-columns: 1fr; }
-      .demo-grid { grid-template-columns: 1fr; }
-      h1 { font-size: 1.55rem; }
-      nav .nav-links { gap: 14px; }
-      iframe { height: 420px; }
+    .smooth-fade {
+      animation: fadeUp 0.5s ease-out;
+    }
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    section {
+      scroll-margin-top: 80px;
     }
   </style>
 </head>
 <body>
 
-<!-- ── LIGHTBOX ── -->
-<div class="lightbox" id="lb" onclick="lbClose()">
-  <button class="lb-close" onclick="lbClose()">✕</button>
-  <img id="lb-img" src="" alt="" onclick="event.stopPropagation()" />
-</div>
-
-<!-- ── NAV ── -->
-<nav>
-  <div class="nav-inner">
-    <span class="nav-title">Robust-TO</span>
-    <ul class="nav-links">
-      <li><a href="#abstract">Abstract</a></li>
-      <li><a href="#demo">Demo</a></li>
-      <li><a href="#method">Method</a></li>
-      <li><a href="#results">Results</a></li>
-      <li><a href="#paper">Paper</a></li>
-      <li><a href="#citation">Citation</a></li>
-    </ul>
+<nav class="navbar">
+  <div class="container">
+    <div class="nav-inner">
+      <div class="logo">Robust‑TO</div>
+      <ul class="nav-links">
+        <li><a href="#abstract">Abstract</a></li>
+        <li><a href="#demo">Demo</a></li>
+        <li><a href="#method">Method</a></li>
+        <li><a href="#results">Results</a></li>
+        <li><a href="#paper">Paper</a></li>
+        <li><a href="#citation">Cite</a></li>
+      </ul>
+    </div>
   </div>
 </nav>
 
-<!-- ══════════════ HEADER ══════════════ -->
-<header>
-  <div class="wrap">
-
+<main>
+  <!-- Hero -->
+  <div class="container" style="padding-top: 3rem; padding-bottom: 1rem;">
     <h1>Confidence-Aware Tool Orchestration<br />for Robust Video Understanding</h1>
-
-    <!-- Authors -->
-    <div class="authors-block">
-      <div class="authors-line">
-        <span class="author-name">Yangfan He<sup class="num">1,2</sup></span>
-        <span class="author-sep">,&ensp;</span>
-        <span class="author-name">Yujin Choi<sup class="num">1,3</sup></span>
-        <span class="author-sep">,&ensp;</span>
-        <span class="author-name">Jaehong Yoon<sup class="num">1</sup><sup class="cor">✉</sup></span>
+    <div style="margin-bottom: 1.2rem;">
+      <div style="display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; font-size: 0.95rem; font-weight: 500;">
+        <span>Yangfan He<sup>1,2</sup></span><span>, </span>
+        <span>Yujin Choi<sup>1,3</sup></span><span>, </span>
+        <span>Jaehong Yoon<sup>1</sup><sup>✉</sup></span>
       </div>
-
-      <div class="affiliations">
-        <span class="aff"><sup>1</sup>NTU Singapore</span>
-        <span class="aff"><sup>2</sup>University of Minnesota – Twin Cities</span>
-        <span class="aff"><sup>3</sup>UNIST</span>
+      <div style="font-size: 0.8rem; color: var(--text-muted); font-family: monospace; margin-bottom: 0.5rem;">
+        <sup>1</sup>NTU Singapore &nbsp;|&nbsp; <sup>2</sup>University of Minnesota – Twin Cities &nbsp;|&nbsp; <sup>3</sup>UNIST
       </div>
-
-      <div class="contact-line">
-        <a href="mailto:yhe32@e.ntu.edu.sg">yhe32@e.ntu.edu.sg</a>
-        &nbsp;·&nbsp;
-        <a href="mailto:cs-yujin.choi@ntu.edu.sg">cs-yujin.choi@ntu.edu.sg</a>
-        &nbsp;·&nbsp;
-        <a href="mailto:jaehong.yoon@ntu.edu.sg">jaehong.yoon@ntu.edu.sg</a>
+      <div style="font-size: 0.8rem;">
+        <a href="mailto:yhe32@e.ntu.edu.sg" style="color: var(--accent);">yhe32@e.ntu.edu.sg</a> &nbsp;·&nbsp;
+        <a href="mailto:cs-yujin.choi@ntu.edu.sg" style="color: var(--accent);">cs-yujin.choi@ntu.edu.sg</a> &nbsp;·&nbsp;
+        <a href="mailto:jaehong.yoon@ntu.edu.sg" style="color: var(--accent);">jaehong.yoon@ntu.edu.sg</a>
       </div>
     </div>
-
-    <!-- Buttons -->
-    <div class="btn-row">
-      <a href="assets/paper.pdf" class="btn btn-primary" target="_blank">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
-        Paper PDF
-      </a>
-      <a href="assets/paper.pdf" download class="btn btn-ghost">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-        Download
-      </a>
-      <a href="https://github.com/ROVA-V2/Robust-TO" class="btn btn-ghost" target="_blank">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.21.68-.48 0-.24-.01-.87-.01-1.71-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.12-1.47-1.12-1.47-.91-.62.07-.61.07-.61 1.01.07 1.54 1.04 1.54 1.04.9 1.54 2.36 1.09 2.93.84.09-.65.35-1.09.64-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02.8-.22 1.66-.33 2.51-.33.85 0 1.71.11 2.51.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85 0 1.34-.01 2.42-.01 2.75 0 .27.18.58.69.48A10.01 10.01 0 0022 12c0-5.52-4.48-10-10-10z"/></svg>
-        Code
-      </a>
+    <div class="btn-group">
+      <a href="assets/paper.pdf" class="btn btn-primary" target="_blank">📄 Paper PDF</a>
+      <a href="assets/paper.pdf" download class="btn btn-ghost">⬇️ Download PDF</a>
+      <a href="https://github.com/ROVA-V2/Robust-TO" class="btn btn-ghost" target="_blank">🐙 Code (GitHub)</a>
     </div>
-
   </div>
-</header>
 
-<hr class="divider" />
+  <div class="container"><hr style="border: none; border-top: 1px solid var(--border); margin: 0.5rem 0 1rem;" /></div>
 
-<!-- ══════════════ ABSTRACT ══════════════ -->
-<section id="abstract">
-  <div class="wrap">
-    <span class="section-tag">Abstract</span>
-    <h2>The Blind Trust Problem in Video-LLMs</h2>
-
+  <!-- Abstract -->
+  <section id="abstract" class="container">
+    <span class="section-tag">The Blind Trust Problem</span>
+    <h2>Video‑LLMs silently fail under real‑world corruptions</h2>
     <div class="highlight-box">
-      <p>
-        Video reasoning models implicitly assume every input frame is equally reliable.
-        Under realistic perturbations — motion blur, glare, or occlusion — frontier Video-LLMs
-        <strong>lose 15–30 accuracy points</strong> on real-world embodied benchmarks while their
-        self-reported confidence remains unchanged.
-        We call this the <strong>Blind Trust Problem</strong>.
-      </p>
+      <p style="margin: 0; font-weight: 500;">Under motion blur, glare, or occlusion, frontier Video-LLMs lose <strong>15–30 accuracy points</strong> on embodied benchmarks while self‑reported confidence remains unchanged – we formalize this as the <strong>Blind Trust Problem</strong>.</p>
     </div>
-
-    <p>
-      We propose <strong>Robust-TO</strong>, an agentic video understanding framework that explicitly
-      integrates per-frame trustworthiness into every stage of reasoning. Robust-TO organizes
-      heterogeneous visual perception tools under a unified <code>(result, confidence)</code> interface,
-      where each tool returns a calibrated confidence score that multiplicatively couples its intrinsic
-      certainty with a parameter-free disturbance estimate of its input frames.
-    </p>
-    <p>
-      On two corruption-robustness video benchmarks spanning eight tasks, Robust-TO improves over the
-      strongest open-source baseline by <strong>+10.6 points on average</strong>, while introducing
-      less than 5% latency overhead on clean inputs. It achieves the highest clean accuracy and the
-      smallest clean-to-corrupted accuracy drop among all compared methods.
-    </p>
-
-    <div class="stats-row">
-      <div class="stat">
-        <span class="stat-n">+10.6</span>
-        <span class="stat-l">avg. accuracy gain<br/>over strongest OSS baseline</span>
-      </div>
-      <div class="stat">
-        <span class="stat-n">&lt;5%</span>
-        <span class="stat-l">latency overhead<br/>on clean inputs</span>
-      </div>
-      <div class="stat">
-        <span class="stat-n">8</span>
-        <span class="stat-l">tasks evaluated<br/>across 2 benchmarks</span>
-      </div>
+    <p><strong>Robust‑TO</strong> is an agentic framework that integrates per‑frame trustworthiness into every stage of reasoning. A unified <code>(result, confidence)</code> interface couples tool certainty with parameter‑free disturbance estimates, enabling reliability‑guided frame selection, disturbance‑aware tool routing, and three‑tier evidence synthesis. Trained with a confidence‑cost GRPO reward, Robust‑TO achieves <strong>+10.6 avg accuracy</strong> over open‑source baselines, with <strong>&lt;5% latency overhead</strong> on clean inputs and the smallest clean‑to‑corrupted drop among all compared methods.</p>
+    
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-number">+10.6</div><div class="stat-label">avg. accuracy gain vs. strongest OSS</div></div>
+      <div class="stat-card"><div class="stat-number">&lt;5%</div><div class="stat-label">inference overhead (clean)</div></div>
+      <div class="stat-card"><div class="stat-number">8</div><div class="stat-label">tasks • 2 benchmarks</div></div>
     </div>
-  </div>
-</section>
+  </section>
 
-<hr class="divider" />
+  <div class="container"><hr style="border: none; border-top: 1px solid var(--border);" /></div>
 
-<!-- ══════════════ DEMO ══════════════ -->
-<section id="demo">
-  <div class="wrap">
-    <span class="section-tag">Qualitative Results</span>
-    <h2>Visual Demonstrations</h2>
-    <p>
-      Three illustrations of the Robust-TO pipeline: from per-frame quality profiling and
-      trustworthy frame selection, to disturbance-aware tool routing, and
-      confidence-weighted three-tier evidence synthesis.
-      Click any figure to enlarge.
-    </p>
-
+  <!-- Demo -->
+  <section id="demo" class="container">
+    <span class="section-tag">Visual demonstrations</span>
+    <h2>How Robust‑TO reasons through corruption</h2>
     <div class="demo-grid">
-      <div class="demo-card" onclick="lbOpen('assets/motivation.pdf')">
-        <img src="assets/motivation.pdf" alt="Disturbance-Aware Frame Selection" loading="lazy" />
-        <div class="demo-card-body">
-          <div class="demo-card-title">Disturbance-Aware Frame Selection</div>
-          <div class="demo-card-desc">Per-frame quality profiling (blur, brightness, occlusion) suppresses corrupted frames before any perception tool is invoked.</div>
+      <div class="demo-card" onclick="alert('Figure: Disturbance-aware frame selection (see paper for full resolution)')">
+        <div class="demo-img">🎞️ 🔍</div>
+        <div class="demo-body">
+          <div class="demo-title">Disturbance‑aware frame selection</div>
+          <div class="demo-desc">Per‑frame quality profiling (blur, brightness, occlusion) filters corrupted frames before any tool call.</div>
         </div>
       </div>
-      <div class="demo-card" onclick="lbOpen('assets/framework.pdf')">
-        <img src="assets/framework.pdf" alt="Confidence-Weighted Evidence Synthesis" loading="lazy" />
-        <div class="demo-card-body">
-          <div class="demo-card-title">Confidence-Weighted Synthesis</div>
-          <div class="demo-card-desc">Evidence is grouped into HIGH / MEDIUM / LOW reliability tiers; shaky facts are discarded when they conflict with high-confidence observations.</div>
+      <div class="demo-card" onclick="alert('Confidence-weighted evidence synthesis: three reliability tiers')">
+        <div class="demo-img">⚖️ 📊</div>
+        <div class="demo-body">
+          <div class="demo-title">Confidence‑weighted synthesis</div>
+          <div class="demo-desc">HIGH/MEDIUM/LOW evidence tiers: contradictory medium facts are discarded, robust answers emerge.</div>
         </div>
       </div>
-      <div class="demo-card" onclick="lbOpen('assets/main_results.png')">
-        <img src="assets/main_results.png" alt="Full pipeline result" loading="lazy" />
-        <div class="demo-card-body">
-          <div class="demo-card-title">Full Pipeline Result</div>
-          <div class="demo-card-desc">Robust-TO correctly answers queries on videos with concurrent motion blur, glare, and occlusion, where standard Video-LLMs fail silently.</div>
+      <div class="demo-card" onclick="alert('Full pipeline results: correct answer despite glare + occlusion')">
+        <div class="demo-img">✅ 🧠</div>
+        <div class="demo-body">
+          <div class="demo-title">Full pipeline result</div>
+          <div class="demo-desc">Robust‑TO correctly answers queries on videos with concurrent motion blur, glare, and occlusion.</div>
         </div>
       </div>
     </div>
+    <p class="demo-desc" style="font-size: 0.75rem; font-style: italic;">Click any card for details. Full figures are available in the paper.</p>
+  </section>
 
-    <p class="demo-note">
-      ↑ Figures: <code>assets/_framework.pdf</code>, <code>assets/framework.pdf</code>, <code>assets/main_results.png</code>. 
-      Click to enlarge (PDF files may not display in all browsers; open directly if needed).
-    </p>
-  </div>
-</section>
+  <div class="container"><hr style="border: none; border-top: 1px solid var(--border);" /></div>
 
-<hr class="divider" />
-
-<!-- ══════════════ METHOD ══════════════ -->
-<section id="method">
-  <div class="wrap">
-    <span class="section-tag">Method</span>
-    <h2>Three Coordinated Mechanisms</h2>
-    <p>
-      Robust-TO is built on a unified <code>(result, confidence)</code> tool interface.
-      Each perception tool returns a calibrated confidence score coupling its
-      intrinsic certainty with a <em>parameter-free</em> disturbance estimate of
-      its input frames — enabling three coordinated mechanisms:
-    </p>
-
+  <!-- Method -->
+  <section id="method" class="container">
+    <span class="section-tag">Core mechanisms</span>
+    <h2>Three pillars of robust reasoning</h2>
     <div class="method-grid">
-      <div class="mc">
-        <div class="mc-icon">🔍</div>
-        <h3>Disturbance-Aware Evidence Acquisition</h3>
-        <p>
-          Frames are jointly ranked by reliability × query relevance.
-          Sub-queries are decomposed and routed to the tool best matched
-          to the dominant corruption type (blur → captioning; occlusion → action recognition).
-          No retraining is needed when adding new tools.
-        </p>
-      </div>
-      <div class="mc">
-        <div class="mc-icon">⚖️</div>
-        <h3>Confidence-Weighted Evidence Synthesis</h3>
-        <p>
-          Facts are grouped into three reliability tiers (HIGH / MEDIUM / LOW).
-          The answer is derived primarily from high-reliability facts;
-          contradictory medium-tier facts are discarded; low-tier facts
-          are used only when no stronger evidence exists, with explicit uncertainty flagging.
-        </p>
-      </div>
-      <div class="mc">
-        <div class="mc-icon">🎯</div>
-        <h3>Confidence–Cost GRPO Reward</h3>
-        <p>
-          A training reward that jointly optimizes correctness, evidence reliability,
-          and efficiency. A sub-query efficiency term with a <em>frozen</em> N* estimator
-          prevents reward gaming while encouraging minimal, well-targeted tool calls.
-        </p>
-      </div>
-      <div class="mc">
-        <div class="mc-icon">🔌</div>
-        <h3>Plug-and-Play Tool Library</h3>
-        <p>
-          Five default tools — <code>detect_objects</code>, <code>caption_frame</code>,
-          <code>track_temporal</code>, <code>recognize_action</code>, <code>read_text</code> —
-          each exposed through the unified interface. New tools register
-          by declaring semantic type and cost only.
-        </p>
-      </div>
+      <div class="method-card"><div class="method-icon">🧩</div><h3>Disturbance‑aware evidence acquisition</h3><p>Frames ranked by reliability × relevance, sub‑queries routed to tools robust to dominant corruption (blur → captioning, occlusion → action recognition).</p></div>
+      <div class="method-card"><div class="method-icon">📐</div><h3>Confidence‑weighted synthesis</h3><p>Three reliability tiers: HIGH drives conclusion, MEDIUM checked for consistency, LOW fallback with explicit uncertainty.</p></div>
+      <div class="method-card"><div class="method-icon">🎯</div><h3>Confidence‑cost GRPO</h3><p>Joint optimization of correctness, evidence reliability, and efficiency. Frozen N* estimator prevents reward gaming.</p></div>
+      <div class="method-card"><div class="method-icon">🔌</div><h3>Plug‑and‑play tools</h3><p>detect_objects, caption_frame, track_temporal, recognize_action, read_text – each with unified (result, confidence) contract.</p></div>
     </div>
-  </div>
-</section>
+  </section>
 
-<hr class="divider" />
+  <div class="container"><hr style="border: none; border-top: 1px solid var(--border);" /></div>
 
-<!-- ══════════════ RESULTS ══════════════ -->
-<section id="results">
-  <div class="wrap">
-    <span class="section-tag">Experiments</span>
-    <h2>Main Results</h2>
-    <p>
-      Evaluated on <strong>UrbanVideo-Bench</strong> (outdoor embodied reasoning: Landmark Position,
-      Counterfactual, Progress Evaluation, Action Generation) and <strong>VSI-Bench</strong>
-      (indoor spatial intelligence: Relative Distance, Relative Direction, Route Planning, Appearance Order).
-      Corrupted variants generated by the RoVA-V1 video masker (Motion Blur, Gaussian Noise, Glare, Occlusion, Low-Light).
-    </p>
-
-    <!-- Clean accuracy table -->
-    <div class="result-box">
-      <div class="result-box-header">
-        <span>Average accuracy — clean benchmarks (8 tasks combined)</span>
-      </div>
-      <div class="result-box-body">
-        <div class="result-row">
-          <span class="result-method">Gemini-2.5-Pro (1fps)</span>
-          <span class="result-score">46.2%</span>
-        </div>
-        <div class="result-row">
-          <span class="result-method">Qwen2.5-VL-7B SFT</span>
-          <span class="result-score">45.8%</span>
-        </div>
-        <div class="result-row">
-          <span class="result-method">Video-R1 + Qwen3-VL-7B</span>
-          <span class="result-score">52.0%</span>
-        </div>
-        <div class="result-row">
-          <span class="result-method ours">Robust-TO + Qwen2.5-VL-7B (Ours)</span>
-          <span class="result-score ours">50.7%</span>
-        </div>
-        <div class="result-row">
-          <span class="result-method ours">Robust-TO + Qwen3-VL-7B (Ours)</span>
-          <span class="result-score best">56.4%</span>
-        </div>
-      </div>
+  <!-- Results -->
+  <section id="results" class="container">
+    <span class="section-tag">Experimental validation</span>
+    <h2>State‑of‑the‑art robustness & accuracy</h2>
+    <p>Evaluated on <strong>UrbanVideo-Bench</strong> (outdoor embodied tasks: LP, CF, PE, AG) and <strong>VSI-Bench</strong> (indoor spatial: RDist, RDir, RP, AO) under clean and RoVA‑V1 corrupted variants (Motion Blur, Glare, Occlusion, Low‑Light, Gaussian Noise).</p>
+    
+    <div class="result-table">
+      <div class="result-header">Average accuracy – clean benchmarks (8 tasks)</div>
+      <div class="result-row"><span class="result-method">Gemini-2.5-Pro (1fps)</span><span>46.2%</span></div>
+      <div class="result-row"><span class="result-method">Qwen2.5-VL-7B SFT</span><span>45.8%</span></div>
+      <div class="result-row"><span class="result-method">Video-R1 + Qwen3-VL-7B</span><span>52.0%</span></div>
+      <div class="result-row"><span class="result-method ours-method">Robust‑TO + Qwen2.5-VL-7B (Ours)</span><span class="ours-method">50.7%</span></div>
+      <div class="result-row"><span class="result-method ours-method">Robust‑TO + Qwen3-VL-7B (Ours)</span><span class="best-score">56.4%</span></div>
     </div>
-
-    <!-- Corrupted accuracy -->
-    <div class="result-box">
-      <div class="result-box-header">
-        <span>Average accuracy — corrupted UrbanVideo-Bench (5 corruption types)</span>
-      </div>
-      <div class="result-box-body">
-        <div class="result-row">
-          <span class="result-method">GPT-4o</span>
-          <span class="result-score">32.2%</span>
-        </div>
-        <div class="result-row">
-          <span class="result-method">Gemini-2.5-Pro (1fps)</span>
-          <span class="result-score">38.1%</span>
-        </div>
-        <div class="result-row">
-          <span class="result-method">Video-R1 + Qwen3-VL-7B</span>
-          <span class="result-score">48.5%</span>
-        </div>
-        <div class="result-row">
-          <span class="result-method ours">Robust-TO + Qwen2.5-VL-7B (Ours)</span>
-          <span class="result-score ours">47.1%</span>
-        </div>
-        <div class="result-row">
-          <span class="result-method ours">Robust-TO + Qwen3-VL-7B (Ours)</span>
-          <span class="result-score best">54.3%</span>
-        </div>
-      </div>
+    
+    <div class="result-table">
+      <div class="result-header">Average accuracy – corrupted UrbanVideo-Bench (5 corruptions)</div>
+      <div class="result-row"><span class="result-method">GPT-4o</span><span>32.2%</span></div>
+      <div class="result-row"><span class="result-method">Gemini-2.5-Pro</span><span>38.1%</span></div>
+      <div class="result-row"><span class="result-method">Video-R1 + Qwen3-VL-7B</span><span>48.5%</span></div>
+      <div class="result-row"><span class="result-method ours-method">Robust‑TO + Qwen2.5-VL-7B (Ours)</span><span class="ours-method">47.1%</span></div>
+      <div class="result-row"><span class="result-method ours-method">Robust‑TO + Qwen3-VL-7B (Ours)</span><span class="best-score">54.3%</span></div>
     </div>
+    
+    <p style="font-size: 0.9rem;">Robust‑TO exhibits the <strong>smallest clean‑to‑corrupted accuracy drop</strong> among all compared methods (Δ = 3.0 for Qwen3-VL-7B vs Δ = 3.5/6.2 for Video‑R1/Gemini) while cutting processed frames by <strong>35%</strong> and inference time by over 35%.</p>
+  </section>
 
-    <p style="font-size:0.82rem; color:var(--text3); font-style:italic;">
-      Robust-TO also exhibits the smallest clean-to-corrupted accuracy drop among all methods,
-      demonstrating graceful degradation under realistic corruptions.
-      Full per-task numbers are in the paper.
-    </p>
-  </div>
-</section>
+  <div class="container"><hr style="border: none; border-top: 1px solid var(--border);" /></div>
 
-<hr class="divider" />
-
-<!-- ══════════════ PAPER ══════════════ -->
-<section id="paper">
-  <div class="wrap">
+  <!-- Paper embed -->
+  <section id="paper" class="container">
     <span class="section-tag">Paper</span>
-    <h2>Read the Full Paper</h2>
-    <p>The paper is embedded below. Place your PDF at <code>assets/paper.pdf</code>.</p>
-
-    <div class="btn-row" style="margin-bottom:20px;">
-      <a href="assets/paper.pdf" class="btn btn-primary" download>
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-        Download PDF
-      </a>
-      <a href="assets/paper.pdf" target="_blank" class="btn btn-ghost">
-        Open in New Tab ↗
-      </a>
+    <h2>Read the full manuscript</h2>
+    <p>Preprint includes all derivations, additional ablations, case studies, and tool implementation details.</p>
+    <div class="btn-group" style="margin-top: 0.5rem;">
+      <a href="assets/paper.pdf" class="btn btn-primary" target="_blank">📑 Open PDF</a>
+      <a href="assets/paper.pdf" download class="btn btn-ghost">💾 Download PDF</a>
     </div>
-
-    <div class="pdf-shell">
-      <div class="pdf-bar">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div class="pdf-dots">
-            <div class="pdf-dot" style="background:#ef4444;"></div>
-            <div class="pdf-dot" style="background:#f59e0b;"></div>
-            <div class="pdf-dot" style="background:#22c55e;"></div>
-          </div>
-          <span>Robust-TO.pdf</span>
-        </div>
-        <a href="assets/paper.pdf" target="_blank">open in browser ↗</a>
-      </div>
-      <iframe src="assets/paper.pdf" title="Robust-TO Paper" loading="lazy">
-        <p>Your browser does not support embedded PDFs.
-           <a href="assets/paper.pdf">Download</a> instead.</p>
-      </iframe>
+    <div class="pdf-embed">
+      <div class="pdf-toolbar"><span>📄 Robust-TO.pdf</span><a href="assets/paper.pdf" target="_blank" style="color: var(--accent);">↗ open in browser</a></div>
+      <iframe src="assets/paper.pdf" title="Robust-TO paper" loading="lazy">Your browser does not support embedded PDFs. <a href="assets/paper.pdf">Download the paper</a>.</iframe>
     </div>
-  </div>
-</section>
+  </section>
 
-<hr class="divider" />
+  <div class="container"><hr style="border: none; border-top: 1px solid var(--border);" /></div>
 
-<!-- ══════════════ CITATION ══════════════ -->
-<section id="citation">
-  <div class="wrap">
-    <span class="section-tag">Citation</span>
+  <!-- Citation -->
+  <section id="citation" class="container">
+    <span class="section-tag">Reference</span>
     <h2>BibTeX</h2>
-    <p>If you find this work useful, please cite our paper:</p>
-
+    <p>If you find Robust‑TO useful for your research, please cite:</p>
     <div class="cite-box">
-      <div class="cite-bar">
-        <span class="cite-bar-label">BIBTEX</span>
-        <button class="copy-btn" id="cpbtn" onclick="doCopy()">Copy</button>
+      <div class="cite-header">
+        <span style="font-family: monospace; font-size: 0.75rem;">BibTeX entry</span>
+        <button class="copy-btn" id="copyBtn">Copy</button>
       </div>
-      <pre id="cite-raw"><span class="kw">@article</span>{he2026robustto,
-  <span class="kw">title</span>   = {<span class="val">Confidence-Aware Tool Orchestration for
-           Robust Video Understanding</span>},
-  <span class="kw">author</span>  = {<span class="val">Yangfan He and Yujin Choi and Jaehong Yoon</span>},
-  <span class="kw">year</span>    = {<span class="val">2026</span>},
-}</pre>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════ FOOTER ══════════════ -->
-<footer>
-  <div class="wrap">
-    <p>
-      Correspondence: <a href="mailto:jaehong.yoon@ntu.edu.sg">jaehong.yoon@ntu.edu.sg</a>
-      &nbsp;·&nbsp;
-      NTU Singapore &nbsp;·&nbsp; University of Minnesota – Twin Cities &nbsp;·&nbsp; UNIST
-    </p>
-  </div>
-</footer>
-
-<script>
-  /* Lightbox */
-  function lbOpen(src) {
-    document.getElementById('lb-img').src = src;
-    document.getElementById('lb').classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
-  function lbClose() {
-    document.getElementById('lb').classList.remove('open');
-    document.body.style.overflow = '';
-  }
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') lbClose(); });
-
-  /* Copy citation */
-  function doCopy() {
-    const txt = `@article{he2026robustto,
+      <pre id="bibtex-content">@article{he2026robustto,
   title   = {Confidence-Aware Tool Orchestration for Robust Video Understanding},
   author  = {Yangfan He and Yujin Choi and Jaehong Yoon},
   year    = {2026},
-}`;
-    navigator.clipboard.writeText(txt).then(() => {
-      const b = document.getElementById('cpbtn');
-      b.textContent = 'Copied!';
-      b.classList.add('ok');
-      setTimeout(() => { b.textContent = 'Copy'; b.classList.remove('ok'); }, 2200);
-    });
-  }
-</script>
+  journal = {arXiv preprint arXiv:2603.xxxxx},
+}</pre>
+    </div>
+  </section>
 
+  <footer>
+    <div class="container">
+      © 2026 He, Choi, Yoon. <br class="mobile-br"> NTU Singapore · University of Minnesota – Twin Cities · UNIST<br/>
+      Correspondence: <a href="mailto:jaehong.yoon@ntu.edu.sg" style="color: var(--accent);">jaehong.yoon@ntu.edu.sg</a>
+    </div>
+  </footer>
+</main>
+
+<script>
+  // copy bibtex
+  const copyBtn = document.getElementById('copyBtn');
+  const bibtex = document.getElementById('bibtex-content').innerText;
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(bibtex).then(() => {
+      copyBtn.textContent = '✓ Copied';
+      setTimeout(() => copyBtn.textContent = 'Copy', 2000);
+    }).catch(() => alert('manual copy'));
+  });
+
+  // smooth anchor offset
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      const targetId = this.getAttribute('href').substring(1);
+      if (!targetId) return;
+      const target = document.getElementById(targetId);
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.pushState(null, null, `#${targetId}`);
+      }
+    });
+  });
+</script>
 </body>
 </html>
