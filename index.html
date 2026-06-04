@@ -440,7 +440,7 @@
           <span>framework.pdf &nbsp;·&nbsp; the Robust-TO architecture &nbsp;<a href="assets/framework.pdf" target="_blank" style="color:var(--accent);text-decoration:none;">PDF ↗</a></span>
         </div>
         <div class="figframe-body" style="padding:0;">
-          <img src="assets/framework.png" alt="The Robust-TO framework: quality-assured reliable frame selection, disturbance-aware tool routing, confidence-weighted evidence synthesis, and GRPO training." style="width:100%;height:auto;display:block;background:#fff;" />
+          <img src="assets/framework.pdf" alt="The Robust-TO framework: quality-assured reliable frame selection, disturbance-aware tool routing, confidence-weighted evidence synthesis, and GRPO training." style="width:100%;height:auto;display:block;background:#fff;" />
         </div>
         <p class="figcap"><span class="ref">Figure 1.</span> <b>The Robust-TO framework.</b> A frozen, parameter-free profiler scores every frame for blur, brightness, and occlusion and keeps only a reliable subset (<i>Quality-Assured Reliable Frame Selection</i>). The query <span class="mono-em">q</span> is decomposed into sub-queries that a <b>disturbance-aware Router</b> dispatches to cost-annotated tools — <span class="mono-em">track_temporal</span>, <span class="mono-em">detect_objects</span>, <span class="mono-em">read_text</span>, … — each returning a unified <span class="mono-em">(result, confidence, source)</span> triple. <i>Confidence-Weighted Evidence Synthesis</i> then sorts that evidence into <b>High / Mid / Low</b> tiers to compose a calibrated answer. The policy is trained end-to-end with <b>GRPO</b> under a combined sub-query-efficiency + confidence-cost reward.</p>
       </div>
@@ -495,7 +495,7 @@
         <span>motivation.pdf &nbsp;·&nbsp; a confidence-aware agent on a corrupted flight &nbsp;<a href="assets/motivation.pdf" target="_blank" style="color:var(--accent);text-decoration:none;">PDF ↗</a></span>
       </div>
       <div class="figframe-body" style="padding:0;">
-        <img src="assets/motivation.png" alt="Motivating workflow: assess per-frame quality, keep trustworthy frames, route sub-queries to suitable tools, and fuse tiered evidence into a confident answer." style="width:100%;height:auto;display:block;background:#fff;" />
+        <img src="assets/motivation.pdf" alt="Motivating workflow: assess per-frame quality, keep trustworthy frames, route sub-queries to suitable tools, and fuse tiered evidence into a confident answer." style="width:100%;height:auto;display:block;background:#fff;" />
       </div>
       <p class="figcap"><span class="ref">Figure 2.</span> <b>Motivating workflow.</b> Given a degraded drone flight and the query <i>“What major landmarks does the drone pass, and in what order?”</i>, Robust-TO first <b>assesses per-frame quality</b>, keeps only the top-<i>k</i> trustworthy frames, <b>routes</b> each sub-query to the tool best suited to it, and <b>fuses tiered evidence</b> (High / Mid / Low) into an answer it can label <b>HIGH</b> confidence — rather than trusting every corrupted frame equally. This confidence-aware loop is precisely what converts silent failure into graceful, measurable degradation.</p>
     </div>
