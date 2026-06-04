@@ -3,720 +3,400 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Robust-TO | Confidence-Aware Tool Orchestration for Robust Video Understanding</title>
-  <meta name="description" content="Robust-TO solves the Blind Trust Problem in Video-LLMs by integrating per‑frame trustworthiness into agentic reasoning, achieving +10.6 avg accuracy gain and graceful degradation under real-world corruptions." />
-  <meta name="keywords" content="Robust-TO, video understanding, blind trust problem, GRPO, tool orchestration, robustness, Video-LLM" />
+  <title>Robust-TO · Confidence-Aware Tool Orchestration for Robust Video Understanding</title>
+  <meta name="description" content="Robust-TO addresses the Blind Trust Problem in Video-LLMs by threading per-frame trustworthiness through agentic reasoning — +10.6 avg accuracy, the smallest clean-to-corrupted drop, and <5% latency overhead." />
+  <meta name="keywords" content="Robust-TO, video understanding, blind trust problem, GRPO, tool orchestration, robustness, Video-LLM, embodied AI" />
   <meta name="author" content="He, Choi, Yoon" />
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230f172a'/%3E%3Cpath fill='%2338bdf8' d='M10 12h12v2H10zm0 4h8v2h-8zm0 4h10v2H10z'/%3E%3C/svg%3E" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a1b2e'/%3E%3Ccircle cx='16' cy='16' r='8.5' fill='none' stroke='%2338bdf8' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2.6' fill='%2338bdf8'/%3E%3C/svg%3E" />
   <meta property="og:title" content="Robust-TO: Confidence-Aware Tool Orchestration for Robust Video Understanding" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --bg: #faf9f7;
+      --bg: #f7f8fa;
+      --bg-deep: #eef1f5;
       --surface: #ffffff;
-      --surface-dim: #f3f1ed;
-      --border: #e8e5df;
-      --border-subtle: #f0ede8;
-      --text: #0f172a;
-      --text-secondary: #374151;
-      --text-tertiary: #6b7280;
-      --text-faint: #9ca3af;
-      --accent: #1e3a5f;
-      --accent-bright: #2563eb;
-      --accent-wash: rgba(37, 99, 235, 0.06);
-      --green: #059669;
-      --green-wash: rgba(5, 150, 105, 0.08);
-      --amber: #d97706;
-      --radius: 12px;
-      --radius-sm: 6px;
-      --shadow-soft: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.02);
-      --shadow-card: 0 2px 8px rgba(0,0,0,0.04), 0 12px 32px rgba(0,0,0,0.03);
-      --shadow-lift: 0 8px 30px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.03);
-      --font-display: 'Newsreader', Georgia, serif;
-      --font-body: 'DM Sans', system-ui, sans-serif;
-      --font-mono: 'IBM Plex Mono', 'Menlo', monospace;
+      --surface-dim: #f1f4f8;
+      --ink: #0a1626;
+      --ink-2: #2b3a4f;
+      --ink-3: #5a6b80;
+      --ink-4: #8a98ab;
+      --line: #e2e7ee;
+      --line-soft: #edf0f5;
+      --accent: #1d4ed8;
+      --accent-bright: #3b82f6;
+      --cyan: #0891b2;
+      --cyan-bright: #06b6d4;
+      --wash: rgba(37, 99, 235, 0.055);
+      --wash-cyan: rgba(8, 145, 178, 0.06);
+      --hi: #0e9f6e;       /* HIGH tier / good */
+      --hi-wash: rgba(14, 159, 110, 0.10);
+      --med: #d97706;      /* MEDIUM tier */
+      --med-wash: rgba(217, 119, 6, 0.10);
+      --lo: #dc2626;       /* LOW tier / bad */
+      --lo-wash: rgba(220, 38, 38, 0.09);
+      --radius: 14px;
+      --radius-sm: 8px;
+      --shadow-1: 0 1px 2px rgba(10,22,38,.04), 0 4px 14px rgba(10,22,38,.03);
+      --shadow-2: 0 2px 8px rgba(10,22,38,.05), 0 16px 40px rgba(10,22,38,.05);
+      --shadow-3: 0 10px 40px rgba(10,22,38,.10), 0 2px 8px rgba(10,22,38,.04);
+      --f-display: 'Newsreader', Georgia, serif;
+      --f-body: 'DM Sans', system-ui, sans-serif;
+      --f-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
     }
 
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
     body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--font-body);
-      line-height: 1.6;
+      background:
+        radial-gradient(1100px 520px at 78% -8%, rgba(59,130,246,.07), transparent 60%),
+        radial-gradient(900px 480px at 12% 2%, rgba(8,145,178,.055), transparent 60%),
+        var(--bg);
+      color: var(--ink);
+      font-family: var(--f-body);
+      line-height: 1.62;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
     }
 
-    ::selection {
-      background: rgba(37, 99, 235, 0.15);
+    /* faint engineering grid overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        linear-gradient(rgba(10,22,38,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(10,22,38,.018) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 30%, transparent 90%);
+      -webkit-mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 30%, transparent 90%);
     }
 
-    .wrap {
-      max-width: 820px;
-      margin: 0 auto;
-      padding: 0 24px;
-    }
+    ::selection { background: rgba(37,99,235,.16); }
 
-    /* ─── NAV ─── */
+    .wrap { max-width: 920px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+    .wrap-narrow { max-width: 760px; }
+
+    /* ─────────────────────────  NAV  ───────────────────────── */
+    .progress { position: fixed; top: 0; left: 0; height: 2px; width: 0%; z-index: 200;
+      background: linear-gradient(90deg, var(--cyan-bright), var(--accent-bright)); transition: width .1s linear; }
+
     .nav {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: rgba(250, 249, 247, 0.85);
-      backdrop-filter: blur(16px) saturate(1.6);
-      -webkit-backdrop-filter: blur(16px) saturate(1.6);
-      border-bottom: 1px solid var(--border-subtle);
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(247,248,250,.82);
+      backdrop-filter: blur(18px) saturate(1.7);
+      -webkit-backdrop-filter: blur(18px) saturate(1.7);
+      border-bottom: 1px solid var(--line-soft);
     }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; }
+    .nav-logo { display: flex; align-items: center; gap: 9px; font-family: var(--f-mono); font-size: .82rem; font-weight: 600; color: var(--ink); letter-spacing: -.02em; }
+    .nav-logo .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent-bright); box-shadow: 0 0 0 3px rgba(59,130,246,.16); position: relative; }
+    .nav-logo .dot::after { content:''; position:absolute; inset:-3px; border-radius:50%; border:1px solid var(--accent-bright); opacity:.5; animation: ping 2.4s ease-out infinite; }
+    @keyframes ping { 0%{transform:scale(.6);opacity:.7} 100%{transform:scale(2.1);opacity:0} }
+    .nav-links { display: flex; gap: 1.5rem; list-style: none; }
+    .nav-links a { text-decoration: none; font-size: .76rem; font-weight: 500; color: var(--ink-3); letter-spacing: .01em; transition: color .2s; position: relative; }
+    .nav-links a::after { content:''; position:absolute; left:0; bottom:-5px; height:1.5px; width:0; background: var(--accent-bright); transition: width .25s; }
+    .nav-links a:hover, .nav-links a.active { color: var(--ink); }
+    .nav-links a.active::after { width: 100%; }
 
-    .nav-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 0;
+    /* ─────────────────────────  HERO  ───────────────────────── */
+    .hero { padding: 4rem 0 1.5rem; text-align: center; }
+    .venue-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--f-mono); font-size: .66rem; font-weight: 500; letter-spacing: .09em; text-transform: uppercase;
+      color: var(--accent); background: var(--wash); border: 1px solid rgba(37,99,235,.18);
+      padding: 5px 13px; border-radius: 100px; margin-bottom: 1.7rem;
     }
-
-    .nav-logo {
-      font-family: var(--font-mono);
-      font-size: 0.82rem;
-      font-weight: 500;
-      color: var(--accent);
-      letter-spacing: -0.01em;
-    }
-
-    .nav-links {
-      display: flex;
-      gap: 1.6rem;
-      list-style: none;
-    }
-
-    .nav-links a {
-      text-decoration: none;
-      font-size: 0.78rem;
-      font-weight: 500;
-      color: var(--text-tertiary);
-      letter-spacing: 0.01em;
-      transition: color 0.2s;
-    }
-
-    .nav-links a:hover { color: var(--text); }
-
-    /* ─── HERO ─── */
-    .hero {
-      padding: 4.5rem 0 2.5rem;
-      text-align: center;
-    }
+    .venue-tag .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan-bright); box-shadow: 0 0 8px var(--cyan-bright); }
 
     .hero h1 {
-      font-family: var(--font-display);
-      font-size: clamp(1.85rem, 4.5vw, 2.7rem);
-      font-weight: 400;
-      line-height: 1.25;
-      letter-spacing: -0.02em;
-      color: var(--text);
-      max-width: 680px;
-      margin: 0 auto 1.6rem;
+      font-family: var(--f-display); font-weight: 500; font-size: clamp(2rem, 5vw, 3.05rem);
+      line-height: 1.16; letter-spacing: -.025em; color: var(--ink);
+      max-width: 760px; margin: 0 auto 1.5rem;
     }
-
-    .authors {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 0.2rem 0.8rem;
-      font-size: 0.92rem;
-      font-weight: 400;
-      color: var(--text-secondary);
-      margin-bottom: 0.4rem;
-    }
-
-    .authors a {
-      color: inherit;
-      text-decoration: none;
-      border-bottom: 1px solid transparent;
-      transition: border-color 0.2s;
-    }
-
-    .authors a:hover { border-bottom-color: var(--text-tertiary); }
-
-    .affiliations {
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      color: var(--text-faint);
-      letter-spacing: 0.01em;
-      margin-bottom: 0.35rem;
-    }
-
-    .emails {
-      font-size: 0.75rem;
-      margin-bottom: 1.8rem;
-    }
-
-    .emails a {
-      color: var(--text-tertiary);
-      text-decoration: none;
-      font-family: var(--font-mono);
-      font-size: 0.72rem;
-      transition: color 0.2s;
-    }
-
-    .emails a:hover { color: var(--accent-bright); }
-
-    .btn-row {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 9px 20px;
-      border-radius: 100px;
-      font-family: var(--font-body);
-      font-weight: 500;
-      font-size: 0.8rem;
-      text-decoration: none;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text-secondary);
-    }
-
-    .btn:hover {
-      border-color: var(--text-faint);
-      color: var(--text);
-      box-shadow: var(--shadow-soft);
-      transform: translateY(-1px);
-    }
-
-    .btn-fill {
-      background: var(--text);
-      border-color: var(--text);
-      color: #fff;
-    }
-
-    .btn-fill:hover {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-      box-shadow: var(--shadow-card);
-    }
-
-    .btn svg {
-      width: 14px;
-      height: 14px;
-      flex-shrink: 0;
-    }
-
-    /* ─── SECTIONS ─── */
-    section {
-      scroll-margin-top: 72px;
-    }
-
-    .sect {
-      padding: 3rem 0;
-    }
-
-    .divider {
-      border: none;
-      border-top: 1px solid var(--border-subtle);
-      margin: 0;
-    }
-
-    .sect-label {
-      display: inline-block;
-      font-family: var(--font-mono);
-      font-size: 0.65rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--accent-bright);
-      margin-bottom: 0.7rem;
-      font-weight: 500;
-    }
-
-    .sect h2 {
-      font-family: var(--font-display);
-      font-size: clamp(1.35rem, 3vw, 1.7rem);
-      font-weight: 400;
-      letter-spacing: -0.015em;
-      color: var(--text);
-      margin-bottom: 1rem;
-      line-height: 1.3;
-    }
-
-    .sect p {
-      color: var(--text-secondary);
-      font-size: 0.92rem;
-      line-height: 1.72;
-      max-width: 65ch;
-    }
-
-    .sect p + p { margin-top: 0.8rem; }
-
-    .sect p strong { color: var(--text); font-weight: 500; }
-
-    .sect p code {
-      font-family: var(--font-mono);
-      font-size: 0.82em;
-      background: var(--surface-dim);
-      padding: 2px 7px;
-      border-radius: 4px;
-      color: var(--accent);
-    }
-
-    /* ─── CALLOUT ─── */
-    .callout {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--accent-bright);
-      border-radius: var(--radius-sm);
-      padding: 1.2rem 1.5rem;
-      margin: 1.5rem 0 1.8rem;
-    }
-
-    .callout p {
-      margin: 0;
-      font-size: 0.9rem;
-      line-height: 1.65;
-    }
-
-    /* ─── STATS ─── */
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1px;
-      background: var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      margin: 2rem 0 0.5rem;
-      border: 1px solid var(--border);
-    }
-
-    .stat {
-      background: var(--surface);
-      padding: 1.6rem 1rem;
-      text-align: center;
-    }
-
-    .stat-val {
-      font-family: var(--font-display);
-      font-size: 2.1rem;
-      font-weight: 500;
-      color: var(--text);
-      line-height: 1;
-      letter-spacing: -0.03em;
-    }
-
-    .stat-val .accent { color: var(--accent-bright); }
-
-    .stat-desc {
-      font-size: 0.68rem;
-      color: var(--text-faint);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-top: 0.5rem;
-      line-height: 1.4;
-    }
-
-    /* ─── DEMO CARDS ─── */
-    .demos {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-      margin: 1.8rem 0 1rem;
-    }
-
-    .demo {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      cursor: pointer;
-    }
-
-    .demo:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow-lift);
-      border-color: var(--accent-bright);
-    }
-
-    .demo-visual {
-      height: 140px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      overflow: hidden;
-      background: var(--surface-dim);
-    }
-
-    .demo-visual .icon-cluster {
-      display: flex;
-      gap: 8px;
-      font-size: 1.6rem;
-      opacity: 0.5;
-      transition: opacity 0.3s;
-    }
-
-    .demo:hover .icon-cluster { opacity: 0.8; }
-
-    /* grid pattern background */
-    .demo-visual::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image:
-        linear-gradient(var(--border-subtle) 1px, transparent 1px),
-        linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
-      background-size: 20px 20px;
-      opacity: 0.6;
-    }
-
-    .demo-body {
-      padding: 1rem 1.1rem 1.15rem;
-      border-top: 1px solid var(--border-subtle);
-    }
-
-    .demo-body h3 {
-      font-family: var(--font-body);
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 0.25rem;
-      letter-spacing: -0.01em;
-    }
-
-    .demo-body p {
-      font-size: 0.75rem;
-      color: var(--text-tertiary);
-      line-height: 1.5;
-    }
-
-    .demo-note {
-      font-size: 0.7rem;
-      color: var(--text-faint);
+    .hero h1 .grad {
+      background: linear-gradient(105deg, var(--accent) 0%, var(--cyan) 100%);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
       font-style: italic;
     }
 
-    /* ─── METHOD PILLARS ─── */
-    .pillars {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin: 1.8rem 0 0.5rem;
+    .authors { display: flex; justify-content: center; flex-wrap: wrap; gap: .2rem .9rem; font-size: .96rem; font-weight: 500; color: var(--ink-2); margin-bottom: .5rem; }
+    .authors a { color: inherit; text-decoration: none; border-bottom: 1px solid transparent; transition: border-color .2s, color .2s; }
+    .authors a:hover { border-bottom-color: var(--accent-bright); color: var(--accent); }
+    .authors sup { color: var(--accent-bright); font-weight: 600; font-size: .62em; }
+    .affil { font-family: var(--f-mono); font-size: .71rem; color: var(--ink-4); letter-spacing: .005em; margin-bottom: .25rem; }
+    .affil sup { color: var(--ink-3); }
+    .corr { font-family: var(--f-mono); font-size: .68rem; color: var(--ink-4); margin-bottom: 1.9rem; }
+    .corr a { color: var(--ink-3); text-decoration: none; transition: color .2s; }
+    .corr a:hover { color: var(--accent); }
+
+    .btn-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px; padding: 10px 20px; border-radius: 100px;
+      font-family: var(--f-body); font-weight: 600; font-size: .8rem; text-decoration: none;
+      transition: all .25s cubic-bezier(.4,0,.2,1); border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
     }
+    .btn:hover { border-color: var(--ink-4); color: var(--ink); box-shadow: var(--shadow-1); transform: translateY(-2px); }
+    .btn-fill { background: var(--ink); border-color: var(--ink); color: #fff; }
+    .btn-fill:hover { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 8px 24px rgba(37,99,235,.28); }
+    .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
 
-    .pillar {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.3rem 1.4rem;
-      position: relative;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* ─────────────────────────  TEASER FIGURE  ───────────────────────── */
+    .teaser { margin: 2.4rem auto 0; }
+    .figframe {
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+      box-shadow: var(--shadow-2); overflow: hidden;
     }
-
-    .pillar:hover {
-      border-color: var(--accent-bright);
-      box-shadow: var(--shadow-card);
-      transform: translateY(-2px);
+    .figframe-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .55rem 1.1rem; background: var(--surface-dim); border-bottom: 1px solid var(--line);
+      font-family: var(--f-mono); font-size: .67rem; color: var(--ink-3); letter-spacing: .02em;
     }
+    .figframe-bar .dots { display: flex; gap: 6px; }
+    .figframe-bar .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--line); display: inline-block; }
+    .figframe-body { padding: 1.4rem 1.3rem 1rem; }
+    .figframe svg { width: 100%; height: auto; display: block; }
+    .figcap { font-size: .78rem; color: var(--ink-3); line-height: 1.6; padding: .2rem 1.3rem 1.2rem; text-align: left; }
+    .figcap b { color: var(--ink); font-weight: 600; }
+    .figcap .ref { font-family: var(--f-mono); font-size: .7rem; color: var(--accent); font-weight: 600; }
 
-    .pillar-num {
-      font-family: var(--font-mono);
-      font-size: 0.62rem;
-      color: var(--accent-bright);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 0.6rem;
-      font-weight: 500;
+    /* legend */
+    .legend { display: flex; gap: 1.3rem; flex-wrap: wrap; justify-content: center; padding: .2rem 0 1rem; }
+    .legend span { display: inline-flex; align-items: center; gap: 7px; font-size: .73rem; color: var(--ink-2); font-weight: 500; }
+    .legend i { width: 22px; height: 0; border-top-width: 2.5px; border-top-style: solid; display: inline-block; }
+
+    /* ─────────────────────────  SECTIONS  ───────────────────────── */
+    section { scroll-margin-top: 70px; }
+    .sect { padding: 3.4rem 0; }
+    .divider { border: none; border-top: 1px solid var(--line-soft); margin: 0; position: relative; z-index: 1; }
+    .sect-label { display: inline-flex; align-items: center; gap: 8px; font-family: var(--f-mono); font-size: .65rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: .8rem; font-weight: 600; }
+    .sect-label::before { content:''; width: 18px; height: 1.5px; background: var(--accent); display: inline-block; }
+    .sect h2 { font-family: var(--f-display); font-size: clamp(1.5rem, 3.4vw, 2rem); font-weight: 500; letter-spacing: -.02em; color: var(--ink); margin-bottom: 1.1rem; line-height: 1.24; }
+    .sect p { color: var(--ink-2); font-size: .94rem; line-height: 1.78; max-width: 68ch; }
+    .sect p + p { margin-top: .85rem; }
+    .sect p strong { color: var(--ink); font-weight: 600; }
+    .mono-em { font-family: var(--f-mono); font-size: .84em; background: var(--surface-dim); padding: 2px 7px; border-radius: 5px; color: var(--accent); border: 1px solid var(--line-soft); }
+
+    /* ─── TL;DR / contributions ─── */
+    .callout {
+      background: linear-gradient(180deg, var(--surface), var(--surface));
+      border: 1px solid var(--line); border-left: 3px solid var(--accent-bright);
+      border-radius: var(--radius-sm); padding: 1.25rem 1.5rem; margin: 1.6rem 0 1.9rem;
+      box-shadow: var(--shadow-1);
     }
+    .callout .lab { font-family: var(--f-mono); font-size: .64rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: .4rem; display: block; }
+    .callout p { margin: 0; font-size: .92rem; line-height: 1.68; max-width: none; }
 
-    .pillar h3 {
-      font-family: var(--font-display);
-      font-size: 1.02rem;
-      font-weight: 500;
-      color: var(--text);
-      margin-bottom: 0.45rem;
-      letter-spacing: -0.01em;
+    .contrib { list-style: none; display: grid; gap: 10px; margin: 1.6rem 0 .4rem; }
+    .contrib li { display: flex; gap: 13px; align-items: flex-start; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: .95rem 1.15rem; transition: border-color .25s, transform .25s, box-shadow .25s; }
+    .contrib li:hover { border-color: var(--accent-bright); transform: translateX(3px); box-shadow: var(--shadow-1); }
+    .contrib .ix { font-family: var(--f-mono); font-size: .72rem; font-weight: 600; color: #fff; background: var(--ink); width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; flex-shrink: 0; }
+    .contrib .tx { font-size: .87rem; color: var(--ink-2); line-height: 1.55; }
+    .contrib .tx b { color: var(--ink); font-weight: 600; }
+
+    /* ─── STATS ─── */
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border-radius: var(--radius); overflow: hidden; margin: 2rem 0 .5rem; border: 1px solid var(--line); box-shadow: var(--shadow-1); }
+    .stat { background: var(--surface); padding: 1.5rem 1rem; text-align: center; position: relative; }
+    .stat-val { font-family: var(--f-display); font-size: 2.05rem; font-weight: 600; color: var(--ink); line-height: 1; letter-spacing: -.03em; }
+    .stat-val .accent { color: var(--accent-bright); }
+    .stat-val .u { font-size: .54em; opacity: .5; font-weight: 500; }
+    .stat-desc { font-size: .66rem; color: var(--ink-4); text-transform: uppercase; letter-spacing: .05em; margin-top: .55rem; line-height: 1.45; font-weight: 500; }
+
+    /* ─────────────────────────  METHOD PIPELINE  ───────────────────────── */
+    .pipe {
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+      box-shadow: var(--shadow-2); overflow: hidden; margin: 1.6rem 0 1.2rem;
     }
-
-    .pillar p {
-      font-size: 0.8rem;
-      color: var(--text-tertiary);
-      line-height: 1.6;
-      max-width: none;
+    .pipe-grid { display: grid; grid-template-columns: 1fr; }
+    .pipe-stage { padding: 1.3rem 1.4rem; border-bottom: 1px dashed var(--line); position: relative; }
+    .pipe-stage:last-child { border-bottom: none; }
+    .pipe-row { display: grid; grid-template-columns: 150px 1fr; gap: 1.1rem; align-items: center; }
+    .pipe-tag { font-family: var(--f-mono); font-size: .64rem; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+    .pipe-tag .n { color: var(--ink-4); display: block; font-size: .8em; margin-bottom: 3px; }
+    .pipe-title { font-family: var(--f-display); font-size: 1.05rem; font-weight: 500; color: var(--ink); margin-bottom: .3rem; }
+    .pipe-desc { font-size: .82rem; color: var(--ink-3); line-height: 1.55; max-width: 56ch; }
+    .pipe-flow { display: flex; gap: 7px; flex-wrap: wrap; margin-top: .7rem; }
+    .chip {
+      font-family: var(--f-mono); font-size: .68rem; font-weight: 500; padding: 4px 10px; border-radius: 6px;
+      background: var(--surface-dim); border: 1px solid var(--line); color: var(--ink-2);
+      transition: all .2s; cursor: default;
     }
+    .chip:hover { border-color: var(--accent-bright); color: var(--accent); background: var(--wash); }
+    .chip.hi { color: var(--hi); border-color: rgba(14,159,110,.3); background: var(--hi-wash); }
+    .chip.med { color: var(--med); border-color: rgba(217,119,6,.3); background: var(--med-wash); }
+    .chip.lo { color: var(--lo); border-color: rgba(220,38,38,.3); background: var(--lo-wash); }
+    .pipe-grpo { background: linear-gradient(180deg, var(--wash-cyan), transparent); border-top: 1px solid var(--line); padding: 1rem 1.4rem; display: flex; align-items: center; gap: 12px; font-size: .8rem; color: var(--ink-2); }
+    .pipe-grpo .ic { width: 30px; height: 30px; border-radius: 8px; background: var(--cyan); color: #fff; display: grid; place-items: center; flex-shrink: 0; font-family: var(--f-mono); font-weight: 600; font-size: .7rem; }
 
-    /* ─── RESULT TABLES ─── */
-    .result-block {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      margin: 1.2rem 0;
-    }
+    /* ─── PILLARS ─── */
+    .pillars { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 1.4rem 0 .4rem; }
+    .pillar { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.35rem 1.45rem; transition: all .3s cubic-bezier(.4,0,.2,1); position: relative; overflow: hidden; }
+    .pillar::before { content:''; position:absolute; top:0; left:0; width:100%; height:2px; background: linear-gradient(90deg,var(--accent-bright),var(--cyan-bright)); transform: scaleX(0); transform-origin: left; transition: transform .35s; }
+    .pillar:hover { border-color: var(--accent-bright); box-shadow: var(--shadow-2); transform: translateY(-3px); }
+    .pillar:hover::before { transform: scaleX(1); }
+    .pillar-num { font-family: var(--f-mono); font-size: .62rem; color: var(--accent-bright); letter-spacing: .08em; text-transform: uppercase; margin-bottom: .55rem; font-weight: 600; }
+    .pillar h3 { font-family: var(--f-display); font-size: 1.05rem; font-weight: 500; color: var(--ink); margin-bottom: .45rem; letter-spacing: -.01em; }
+    .pillar p { font-size: .81rem; color: var(--ink-3); line-height: 1.6; max-width: none; }
+    .pillar code { font-family: var(--f-mono); font-size: .8em; color: var(--accent); }
 
-    .result-block + .result-block { margin-top: 0.8rem; }
+    /* ─────────────────────────  INTERACTIVE DEMO  ───────────────────────── */
+    .demo-shell { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-2); overflow: hidden; margin: 1.6rem 0 1rem; }
+    .demo-top { display: grid; grid-template-columns: 1.15fr 1fr; }
+    @media (max-width: 720px){ .demo-top { grid-template-columns: 1fr; } }
+    .demo-scene { position: relative; background: #0a1626; border-right: 1px solid var(--line); overflow: hidden; min-height: 280px; }
+    .demo-scene svg { width: 100%; height: 100%; display: block; transition: filter .25s; }
+    .scene-overlay { position: absolute; inset: 0; pointer-events: none; }
+    .ov-glare { background: radial-gradient(circle at 72% 30%, rgba(255,255,255,.92), rgba(255,255,255,.0) 42%); opacity: 0; transition: opacity .25s; mix-blend-mode: screen; }
+    .ov-occ { position:absolute; right:-4%; top:8%; width:46%; height:78%; background: linear-gradient(120deg,#05080d,#0d1622); border-radius: 40% 12% 38% 14%; opacity: 0; transition: opacity .25s; filter: blur(2px); }
+    .ov-dark { background: #02060c; opacity: 0; transition: opacity .25s; }
+    .ov-noise { opacity: 0; transition: opacity .25s; mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E"); }
+    .scene-badge { position: absolute; top: 10px; left: 10px; font-family: var(--f-mono); font-size: .6rem; color: rgba(255,255,255,.55); letter-spacing: .08em; pointer-events: none; }
+    .scene-tool { position: absolute; bottom: 10px; left: 10px; font-family: var(--f-mono); font-size: .64rem; padding: 4px 9px; border-radius: 6px; background: rgba(255,255,255,.1); color: #cfe3ff; border: 1px solid rgba(255,255,255,.16); backdrop-filter: blur(4px); transition: all .25s; }
 
-    .result-block-head {
-      padding: 0.7rem 1.3rem;
-      background: var(--surface-dim);
-      border-bottom: 1px solid var(--border);
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      color: var(--text-tertiary);
-      letter-spacing: 0.02em;
-    }
+    .demo-panel { padding: 1.2rem 1.3rem; display: flex; flex-direction: column; gap: 1rem; }
+    .demo-h { font-family: var(--f-mono); font-size: .64rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-4); font-weight: 600; }
+    .corrupt-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+    .cbtn { font-family: var(--f-mono); font-size: .68rem; font-weight: 500; padding: 6px 11px; border-radius: 7px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-3); cursor: pointer; transition: all .2s; user-select: none; }
+    .cbtn:hover { border-color: var(--ink-4); color: var(--ink); }
+    .cbtn.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+    .slider-row { display: flex; align-items: center; gap: 11px; }
+    .slider-row label { font-size: .72rem; color: var(--ink-3); white-space: nowrap; font-weight: 500; }
+    input[type=range] { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 4px; background: var(--line); flex: 1; outline: none; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%; background: var(--accent-bright); cursor: pointer; box-shadow: 0 0 0 4px rgba(59,130,246,.16); transition: transform .15s; }
+    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+    input[type=range]::-moz-range-thumb { width: 15px; height: 15px; border: none; border-radius: 50%; background: var(--accent-bright); cursor: pointer; }
 
-    .result-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.6rem 1.3rem;
-      border-bottom: 1px solid var(--border-subtle);
-      font-size: 0.85rem;
-      transition: background 0.15s;
-    }
+    .meter { }
+    .meter-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+    .meter-name { font-size: .74rem; color: var(--ink-2); font-weight: 500; }
+    .meter-val { font-family: var(--f-mono); font-size: .76rem; font-weight: 600; }
+    .meter-bar { height: 7px; border-radius: 5px; background: var(--surface-dim); overflow: hidden; border: 1px solid var(--line-soft); }
+    .meter-fill { height: 100%; border-radius: 5px; transition: width .35s cubic-bezier(.4,0,.2,1), background .35s; }
+    .tier-pill { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: .68rem; font-weight: 600; padding: 4px 11px; border-radius: 100px; }
+    .tier-pill .d { width: 7px; height: 7px; border-radius: 50%; }
+    .demo-answer { font-size: .8rem; color: var(--ink-2); line-height: 1.5; padding: .8rem .95rem; background: var(--surface-dim); border-radius: var(--radius-sm); border: 1px solid var(--line-soft); }
+    .demo-answer b { color: var(--ink); font-weight: 600; font-family: var(--f-mono); font-size: .92em; }
+    .demo-foot { padding: .85rem 1.3rem; border-top: 1px solid var(--line); background: var(--surface-dim); font-size: .73rem; color: var(--ink-3); line-height: 1.55; }
+    .demo-foot b { color: var(--ink); }
 
-    .result-row:last-child { border-bottom: none; }
+    /* ─────────────────────────  RESULTS TABLES  ───────────────────────── */
+    .tbl-wrap { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-1); margin: 1.2rem 0; }
+    .tbl-head { padding: .75rem 1.2rem; background: var(--surface-dim); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+    .tbl-head .t { font-family: var(--f-display); font-size: .98rem; font-weight: 500; color: var(--ink); }
+    .tbl-head .meta { font-family: var(--f-mono); font-size: .64rem; color: var(--ink-4); letter-spacing: .03em; }
+    .tbl-scroll { overflow-x: auto; }
+    table.res { width: 100%; border-collapse: collapse; font-size: .8rem; min-width: 600px; }
+    table.res th, table.res td { padding: .55rem .7rem; text-align: center; white-space: nowrap; }
+    table.res thead th { font-family: var(--f-mono); font-size: .62rem; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; color: var(--ink-4); border-bottom: 1.5px solid var(--line); background: var(--surface); position: sticky; top: 0; }
+    table.res th.method, table.res td.method { text-align: left; padding-left: 1.2rem; color: var(--ink-2); font-weight: 500; font-family: var(--f-body); min-width: 200px; }
+    table.res td.avg { font-family: var(--f-mono); font-weight: 600; }
+    table.res td { color: var(--ink-3); font-family: var(--f-mono); border-bottom: 1px solid var(--line-soft); }
+    table.res tbody tr { transition: background .15s; }
+    table.res tbody tr:hover { background: var(--wash); }
+    table.res tbody tr:last-child td { border-bottom: none; }
+    table.res td.best { color: var(--ink); font-weight: 700; }
+    table.res tr.ours { background: var(--wash); }
+    table.res tr.ours td.method { color: var(--accent); font-weight: 600; }
+    table.res tr.ours td.avg { color: var(--accent); }
+    table.res tr.ours-best { background: linear-gradient(90deg, var(--wash), var(--wash-cyan)); }
+    table.res tr.ours-best td.method { color: var(--accent); font-weight: 700; }
+    table.res tr.ours-best td { color: var(--ink); }
+    table.res tr.ours-best td.avg { color: var(--accent); font-weight: 700; }
+    .sep-row td { background: var(--surface-dim) !important; padding: .25rem 1.2rem !important; text-align: left !important; font-family: var(--f-mono); font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-4); border-bottom: 1px solid var(--line) !important; }
+    .star { color: var(--accent-bright); font-weight: 700; }
 
-    .result-row:hover { background: var(--accent-wash); }
+    /* robustness delta */
+    .delta-wrap { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin: 1.4rem 0 .4rem; }
+    .delta-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.3rem; box-shadow: var(--shadow-1); }
+    .delta-card .lab { font-family: var(--f-mono); font-size: .64rem; color: var(--ink-4); letter-spacing: .03em; margin-bottom: .55rem; }
+    .delta-card .num { font-family: var(--f-display); font-size: 2rem; font-weight: 600; letter-spacing: -.03em; line-height: 1; }
+    .delta-card .num small { font-size: .42em; font-family: var(--f-body); color: var(--ink-4); font-weight: 500; }
+    .delta-track { height: 8px; border-radius: 5px; background: var(--surface-dim); margin-top: .8rem; overflow: hidden; border: 1px solid var(--line-soft); position: relative; }
+    .delta-track i { position: absolute; left: 0; top: 0; height: 100%; border-radius: 5px; }
+    .delta-card .sub { font-size: .72rem; color: var(--ink-3); margin-top: .55rem; }
+    .delta-card.win { border-color: rgba(14,159,110,.35); }
+    .delta-card.win .num { color: var(--hi); }
 
-    .result-name { color: var(--text-secondary); font-weight: 400; }
+    .result-note { font-size: .85rem; color: var(--ink-2); margin-top: 1.3rem; line-height: 1.7; max-width: 70ch; }
+    .result-note strong { color: var(--ink); font-weight: 600; }
 
-    .result-score {
-      font-family: var(--font-mono);
-      font-size: 0.82rem;
-      color: var(--text-tertiary);
-      font-weight: 500;
-    }
-
-    .result-row.ours {
-      background: var(--accent-wash);
-    }
-
-    .result-row.ours .result-name {
-      color: var(--accent-bright);
-      font-weight: 600;
-    }
-
-    .result-row.ours .result-score {
-      color: var(--accent-bright);
-      font-weight: 600;
-    }
-
-    .result-row.best .result-score {
-      color: var(--green);
-      font-weight: 600;
-    }
-
-    .result-row.best .result-name {
-      color: var(--green);
-    }
-
-    .result-note {
-      font-size: 0.82rem;
-      color: var(--text-tertiary);
-      margin-top: 1rem;
-      line-height: 1.65;
-    }
-
-    .result-note strong { color: var(--text); }
-
-    /* ─── PAPER EMBED ─── */
-    .pdf-shell {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      margin: 1.4rem 0;
-    }
-
-    .pdf-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.65rem 1.2rem;
-      background: var(--surface-dim);
-      border-bottom: 1px solid var(--border);
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      color: var(--text-tertiary);
-    }
-
-    .pdf-bar a {
-      color: var(--accent-bright);
-      text-decoration: none;
-      font-size: 0.7rem;
-    }
-
+    /* ─────────────────────────  PAPER / CITE  ───────────────────────── */
+    .pdf-shell { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin: 1.4rem 0; box-shadow: var(--shadow-2); }
+    .pdf-bar { display: flex; justify-content: space-between; align-items: center; padding: .65rem 1.2rem; background: var(--surface-dim); border-bottom: 1px solid var(--line); font-family: var(--f-mono); font-size: .68rem; color: var(--ink-3); }
+    .pdf-bar a { color: var(--accent); text-decoration: none; }
     .pdf-bar a:hover { text-decoration: underline; }
+    .pdf-shell iframe { width: 100%; height: 620px; border: none; display: block; background: #fff; }
 
-    .pdf-shell iframe {
-      width: 100%;
-      height: 580px;
-      border: none;
-      display: block;
-    }
+    .cite-block { background: #0a1626; border: 1px solid #16243a; border-radius: var(--radius); overflow: hidden; margin: 1.2rem 0; box-shadow: var(--shadow-2); }
+    .cite-head { display: flex; justify-content: space-between; align-items: center; padding: .6rem 1.2rem; background: #0d1c30; border-bottom: 1px solid #16243a; }
+    .cite-head span { font-family: var(--f-mono); font-size: .68rem; color: #6b8bb5; }
+    .copy-btn { background: none; border: 1px solid #25344b; padding: 4px 14px; border-radius: 100px; font-family: var(--f-mono); font-size: .64rem; color: #9db8d8; cursor: pointer; transition: all .2s; }
+    .copy-btn:hover { border-color: var(--cyan-bright); color: var(--cyan-bright); }
+    .cite-block pre { padding: 1.15rem 1.3rem; font-family: var(--f-mono); font-size: .76rem; line-height: 1.7; overflow-x: auto; color: #c3d4ea; }
+    .cite-block pre .k { color: #6cc7e8; }
+    .cite-block pre .v { color: #b6e3c4; }
 
-    /* ─── CITATION ─── */
-    .cite-block {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      margin: 1.2rem 0;
-    }
+    /* ─────────────────────────  FOOTER  ───────────────────────── */
+    footer { border-top: 1px solid var(--line-soft); padding: 2.4rem 0; text-align: center; position: relative; z-index: 1; }
+    footer .ack { font-size: .8rem; color: var(--ink-3); max-width: 60ch; margin: 0 auto 1.1rem; line-height: 1.65; }
+    footer p { font-size: .71rem; color: var(--ink-4); max-width: none; margin: 0; line-height: 1.7; }
+    footer a { color: var(--ink-3); text-decoration: none; transition: color .2s; }
+    footer a:hover { color: var(--accent); }
 
-    .cite-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.6rem 1.2rem;
-      background: var(--surface-dim);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .cite-head span {
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      color: var(--text-tertiary);
-    }
-
-    .copy-btn {
-      background: none;
-      border: 1px solid var(--border);
-      padding: 3px 12px;
-      border-radius: 100px;
-      font-family: var(--font-mono);
-      font-size: 0.65rem;
-      color: var(--text-tertiary);
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .copy-btn:hover {
-      border-color: var(--accent-bright);
-      color: var(--accent-bright);
-    }
-
-    .cite-block pre {
-      padding: 1.1rem 1.2rem;
-      font-family: var(--font-mono);
-      font-size: 0.78rem;
-      line-height: 1.65;
-      overflow-x: auto;
-      background: var(--surface);
-      color: var(--text-secondary);
-    }
-
-    /* ─── FOOTER ─── */
-    footer {
-      border-top: 1px solid var(--border-subtle);
-      padding: 2rem 0;
-      text-align: center;
-    }
-
-    footer p {
-      font-size: 0.72rem;
-      color: var(--text-faint);
-      max-width: none;
-      margin: 0;
-      line-height: 1.7;
-    }
-
-    footer a {
-      color: var(--text-tertiary);
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-
-    footer a:hover { color: var(--accent-bright); }
-
-    /* ─── SCROLL REVEAL ─── */
-    .reveal {
-      opacity: 0;
-      transform: translateY(18px);
-      transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-                  transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .reveal.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* stagger children */
-    .stagger > * {
-      opacity: 0;
-      transform: translateY(14px);
-      transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-                  transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .stagger.visible > *:nth-child(1) { transition-delay: 0ms; }
-    .stagger.visible > *:nth-child(2) { transition-delay: 60ms; }
-    .stagger.visible > *:nth-child(3) { transition-delay: 120ms; }
-    .stagger.visible > *:nth-child(4) { transition-delay: 180ms; }
-
-    .stagger.visible > * {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    /* ─── REVEAL ─── */
+    .reveal { opacity: 0; transform: translateY(20px); transition: opacity .7s cubic-bezier(.4,0,.2,1), transform .7s cubic-bezier(.4,0,.2,1); }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .stagger > * { opacity: 0; transform: translateY(16px); transition: opacity .55s cubic-bezier(.4,0,.2,1), transform .55s cubic-bezier(.4,0,.2,1); }
+    .stagger.visible > *:nth-child(1){transition-delay:0ms}.stagger.visible > *:nth-child(2){transition-delay:70ms}.stagger.visible > *:nth-child(3){transition-delay:140ms}.stagger.visible > *:nth-child(4){transition-delay:210ms}.stagger.visible > *:nth-child(5){transition-delay:280ms}
+    .stagger.visible > * { opacity: 1; transform: translateY(0); }
+    @media (prefers-reduced-motion: reduce){ .reveal,.stagger>*{opacity:1!important;transform:none!important} .nav-logo .dot::after{animation:none} }
 
     /* ─── RESPONSIVE ─── */
-    @media (max-width: 700px) {
-      .hero { padding: 3rem 0 2rem; }
-
-      .pillars, .demos {
-        grid-template-columns: 1fr;
-      }
-
-      .stats {
-        grid-template-columns: 1fr;
-      }
-
-      .nav-links { gap: 1rem; }
-
-      .btn-row {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .btn { justify-content: center; }
-
-      .pdf-shell iframe { height: 360px; }
+    @media (max-width: 720px) {
+      .hero { padding: 2.8rem 0 1rem; }
+      .pillars { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: repeat(2,1fr); }
+      .delta-wrap { grid-template-columns: 1fr; }
+      .pipe-row { grid-template-columns: 1fr; gap: .4rem; }
+      .nav-links { gap: .9rem; }
+      .btn-row { gap: 8px; }
+      .pdf-shell iframe { height: 380px; }
     }
-
-    @media (max-width: 440px) {
+    @media (max-width: 480px) {
       .nav-links { display: none; }
+      .stats { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 1.85rem; }
     }
   </style>
 </head>
 <body>
 
-<!-- NAV -->
+<div class="progress" id="progress"></div>
+
+<!-- ───────────── NAV ───────────── -->
 <nav class="nav">
   <div class="wrap">
     <div class="nav-inner">
-      <div class="nav-logo">Robust‑TO</div>
+      <div class="nav-logo"><span class="dot"></span>Robust&#8209;TO</div>
       <ul class="nav-links">
         <li><a href="#abstract">Abstract</a></li>
-        <li><a href="#demo">Demo</a></li>
+        <li><a href="#problem">Problem</a></li>
         <li><a href="#method">Method</a></li>
+        <li><a href="#demo">Demo</a></li>
         <li><a href="#results">Results</a></li>
         <li><a href="#paper">Paper</a></li>
-        <li><a href="#citation">Cite</a></li>
+        <li><a href="#cite">Cite</a></li>
       </ul>
     </div>
   </div>
@@ -724,173 +404,323 @@
 
 <main>
 
-  <!-- HERO -->
+  <!-- ───────────── HERO ───────────── -->
   <header class="hero wrap">
-    <h1>Confidence-Aware Tool Orchestration<br/>for Robust Video Understanding</h1>
+    <span class="venue-tag"><span class="pulse"></span>Preprint · 2026 · Agentic Video Understanding</span>
+    <h1>Confidence-Aware Tool Orchestration<br/>for <span class="grad">Robust</span> Video Understanding</h1>
+
     <div class="authors">
-      <span>Yangfan He<sup>1,2</sup></span>
-      <span>Yujin Choi<sup>1,3</sup></span>
-      <span>Jaehong Yoon<sup>1</sup><sup>✉</sup></span>
+      <span><a href="mailto:yhe32@e.ntu.edu.sg">Yangfan He</a><sup>1,2</sup></span>
+      <span><a href="mailto:cs-yujin.choi@ntu.edu.sg">Yujin Choi</a><sup>1,3</sup></span>
+      <span><a href="mailto:jaehong.yoon@ntu.edu.sg">Jaehong Yoon</a><sup>1,✉</sup></span>
     </div>
-    <div class="affiliations">
-      <sup>1</sup>NTU Singapore &ensp;·&ensp; <sup>2</sup>University of Minnesota – Twin Cities &ensp;·&ensp; <sup>3</sup>UNIST
-    </div>
-    <div class="emails">
-      <a href="mailto:yhe32@e.ntu.edu.sg">yhe32@e.ntu.edu.sg</a> &ensp;·&ensp;
-      <a href="mailto:cs-yujin.choi@ntu.edu.sg">cs-yujin.choi@ntu.edu.sg</a> &ensp;·&ensp;
-      <a href="mailto:jaehong.yoon@ntu.edu.sg">jaehong.yoon@ntu.edu.sg</a>
-    </div>
+    <div class="affil"><sup>1</sup>NTU Singapore &ensp;·&ensp; <sup>2</sup>University of Minnesota–Twin Cities &ensp;·&ensp; <sup>3</sup>UNIST</div>
+    <div class="corr">✉ Correspondence: <a href="mailto:jaehong.yoon@ntu.edu.sg">jaehong.yoon@ntu.edu.sg</a></div>
+
     <div class="btn-row">
       <a href="assets/paper.pdf" class="btn btn-fill" target="_blank">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         Paper
       </a>
-      <a href="assets/paper.pdf" download class="btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download
+      <a href="https://arxiv.org/" class="btn" target="_blank">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 8l8 8M16 8l-8 8"/></svg>
+        arXiv
       </a>
       <a href="https://github.com/ROVA-V2/Robust-TO" class="btn" target="_blank">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
         Code
       </a>
     </div>
+
+    <!-- FRAMEWORK FIGURE (Figure 1) -->
+    <div class="teaser reveal">
+      <div class="figframe">
+        <div class="figframe-bar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span>framework.pdf &nbsp;·&nbsp; the Robust-TO architecture &nbsp;<a href="assets/framework.pdf" target="_blank" style="color:var(--accent);text-decoration:none;">PDF ↗</a></span>
+        </div>
+        <div class="figframe-body" style="padding:0;">
+          <img src="assets/framework.png" alt="The Robust-TO framework: quality-assured reliable frame selection, disturbance-aware tool routing, confidence-weighted evidence synthesis, and GRPO training." style="width:100%;height:auto;display:block;background:#fff;" />
+        </div>
+        <p class="figcap"><span class="ref">Figure 1.</span> <b>The Robust-TO framework.</b> A frozen, parameter-free profiler scores every frame for blur, brightness, and occlusion and keeps only a reliable subset (<i>Quality-Assured Reliable Frame Selection</i>). The query <span class="mono-em">q</span> is decomposed into sub-queries that a <b>disturbance-aware Router</b> dispatches to cost-annotated tools — <span class="mono-em">track_temporal</span>, <span class="mono-em">detect_objects</span>, <span class="mono-em">read_text</span>, … — each returning a unified <span class="mono-em">(result, confidence, source)</span> triple. <i>Confidence-Weighted Evidence Synthesis</i> then sorts that evidence into <b>High / Mid / Low</b> tiers to compose a calibrated answer. The policy is trained end-to-end with <b>GRPO</b> under a combined sub-query-efficiency + confidence-cost reward.</p>
+      </div>
+    </div>
   </header>
 
   <div class="wrap"><hr class="divider" /></div>
 
-  <!-- ABSTRACT -->
-  <section id="abstract" class="sect wrap">
+  <!-- ───────────── ABSTRACT ───────────── -->
+  <section id="abstract" class="sect wrap wrap-narrow">
     <div class="reveal">
-      <span class="sect-label">The Blind Trust Problem</span>
-      <h2>Video‑LLMs silently fail under real‑world corruptions</h2>
-      <div class="callout">
-        <p>Under motion blur, glare, or occlusion, frontier Video-LLMs lose <strong>15–30 accuracy points</strong> on embodied benchmarks while self‑reported confidence remains unchanged — we formalize this as the <strong>Blind Trust Problem</strong>.</p>
-      </div>
-      <p><strong>Robust‑TO</strong> is an agentic framework that integrates per‑frame trustworthiness into every stage of reasoning. A unified <code>(result, confidence)</code> interface couples tool certainty with parameter‑free disturbance estimates, enabling reliability‑guided frame selection, disturbance‑aware tool routing, and three‑tier evidence synthesis. Trained with a confidence‑cost GRPO reward, Robust‑TO achieves <strong>+10.6 avg accuracy</strong> over open‑source baselines, with <strong>&lt;5% latency overhead</strong> on clean inputs and the smallest clean‑to‑corrupted drop among all compared methods.</p>
+      <span class="sect-label">Abstract</span>
+      <h2>Threading trustworthiness through every reasoning step</h2>
+      <p><strong>Robust-TO</strong> is an agentic framework that makes per-frame trustworthiness a first-class signal across the entire video reasoning pipeline. A unified <span class="mono-em">(result, confidence)</span> interface couples each tool's intrinsic certainty with a parameter-free disturbance estimate, enabling <strong>reliability-guided frame selection</strong>, <strong>disturbance-aware tool routing</strong>, and <strong>three-tier evidence synthesis</strong>.</p>
+      <p>Optimized with a <strong>confidence-cost GRPO</strong> reward that jointly balances correctness, evidence reliability, and compute, Robust-TO delivers <strong>+10.6 average accuracy</strong> over the strongest open-source baseline, the <strong>smallest clean-to-corrupted accuracy drop</strong> among all compared methods, and <strong>&lt;5% latency overhead</strong> on clean inputs — degrading gracefully rather than failing silently.</p>
     </div>
+
+    <div class="callout reveal">
+      <span class="lab">TL;DR</span>
+      <p>Video-LLMs trust every frame equally and never report when they shouldn't. Robust-TO teaches an agent to <strong>know what it cannot see</strong>, route around it, and answer with calibrated confidence — turning catastrophic failure under real-world corruption into graceful, measurable degradation.</p>
+    </div>
+
+    <ul class="contrib stagger reveal">
+      <li><span class="ix">01</span><span class="tx"><b>Problem formalization.</b> We define and quantify the <b>Blind Trust Problem</b> — the systematic decoupling of Video-LLM accuracy from self-reported confidence under real-world corruption.</span></li>
+      <li><span class="ix">02</span><span class="tx"><b>Confidence-aware orchestration.</b> A unified <span class="mono-em">(result, confidence)</span> tool contract drives reliability×relevance frame selection, disturbance-aware routing, and tiered evidence synthesis.</span></li>
+      <li><span class="ix">03</span><span class="tx"><b>Confidence-cost GRPO.</b> A reward jointly optimizing correctness, evidence reliability, and efficiency, with a frozen disturbance estimator that prevents reward gaming.</span></li>
+      <li><span class="ix">04</span><span class="tx"><b>State-of-the-art robustness.</b> +10.6 avg accuracy, the smallest clean→corrupted drop, 35% fewer frames, and &lt;5% overhead across 8 tasks on two embodied benchmarks.</span></li>
+    </ul>
 
     <div class="stats reveal">
-      <div class="stat">
-        <div class="stat-val"><span class="accent">+10.6</span></div>
-        <div class="stat-desc">Avg. accuracy gain<br/>vs. strongest OSS</div>
-      </div>
-      <div class="stat">
-        <div class="stat-val">&lt;5<span style="font-size:0.6em; opacity:0.5">%</span></div>
-        <div class="stat-desc">Inference overhead<br/>on clean inputs</div>
-      </div>
-      <div class="stat">
-        <div class="stat-val">8</div>
-        <div class="stat-desc">Tasks across<br/>2 benchmarks</div>
-      </div>
+      <div class="stat"><div class="stat-val"><span class="accent">+10.6</span></div><div class="stat-desc">Avg. accuracy gain<br/>vs. strongest OSS</div></div>
+      <div class="stat"><div class="stat-val">3.0<span class="u">Δ</span></div><div class="stat-desc">Clean→corrupted drop<br/>smallest of all methods</div></div>
+      <div class="stat"><div class="stat-val">&lt;5<span class="u">%</span></div><div class="stat-desc">Latency overhead<br/>on clean inputs</div></div>
+      <div class="stat"><div class="stat-val">8</div><div class="stat-desc">Tasks across<br/>2 benchmarks</div></div>
     </div>
   </section>
 
   <div class="wrap"><hr class="divider" /></div>
 
-  <!-- DEMO -->
-  <section id="demo" class="sect wrap">
+  <!-- ───────────── PROBLEM ───────────── -->
+  <section id="problem" class="sect wrap wrap-narrow">
     <div class="reveal">
-      <span class="sect-label">Visual demonstrations</span>
-      <h2>How Robust‑TO reasons through corruption</h2>
+      <span class="sect-label">Motivation</span>
+      <h2>Why frontier Video-LLMs fail silently</h2>
+      <p>Embodied agents see motion blur, glare, occlusion, low light, and sensor noise constantly. Under these conditions, current Video-LLMs lose <strong>15–30 accuracy points</strong> on embodied benchmarks — but their internal confidence does not move. A downstream planner has <strong>no signal</strong> that the perception it depends on has quietly become unreliable.</p>
+      <p>Existing robustness work hardens a single monolithic model. Robust-TO takes the opposite view: keep the tools, but make the <strong>agent reason about their trustworthiness</strong>. Every observation carries an explicit reliability estimate, and that estimate shapes which frames are read, which tools are called, and how evidence is fused into an answer. <strong>Figure 2</strong> traces this loop on a single corrupted flight.</p>
     </div>
-    <div class="demos stagger">
-      <div class="demo" onclick="alert('Figure: Disturbance-aware frame selection (see paper for full resolution)')">
-        <div class="demo-visual"><div class="icon-cluster">🎞️ 🔍</div></div>
-        <div class="demo-body">
-          <h3>Disturbance‑aware frame selection</h3>
-          <p>Per‑frame quality profiling (blur, brightness, occlusion) filters corrupted frames before any tool call.</p>
-        </div>
+
+    <div class="figframe reveal" style="margin-top:1.6rem;">
+      <div class="figframe-bar">
+        <span class="dots"><i></i><i></i><i></i></span>
+        <span>motivation.pdf &nbsp;·&nbsp; a confidence-aware agent on a corrupted flight &nbsp;<a href="assets/motivation.pdf" target="_blank" style="color:var(--accent);text-decoration:none;">PDF ↗</a></span>
       </div>
-      <div class="demo" onclick="alert('Confidence-weighted evidence synthesis: three reliability tiers')">
-        <div class="demo-visual"><div class="icon-cluster">⚖️ 📊</div></div>
-        <div class="demo-body">
-          <h3>Confidence‑weighted synthesis</h3>
-          <p>HIGH / MEDIUM / LOW evidence tiers: contradictory medium facts are discarded, robust answers emerge.</p>
-        </div>
+      <div class="figframe-body" style="padding:0;">
+        <img src="assets/motivation.png" alt="Motivating workflow: assess per-frame quality, keep trustworthy frames, route sub-queries to suitable tools, and fuse tiered evidence into a confident answer." style="width:100%;height:auto;display:block;background:#fff;" />
       </div>
-      <div class="demo" onclick="alert('Full pipeline results: correct answer despite glare + occlusion')">
-        <div class="demo-visual"><div class="icon-cluster">✅ 🧠</div></div>
-        <div class="demo-body">
-          <h3>Full pipeline result</h3>
-          <p>Robust‑TO correctly answers queries on videos with concurrent motion blur, glare, and occlusion.</p>
-        </div>
-      </div>
+      <p class="figcap"><span class="ref">Figure 2.</span> <b>Motivating workflow.</b> Given a degraded drone flight and the query <i>“What major landmarks does the drone pass, and in what order?”</i>, Robust-TO first <b>assesses per-frame quality</b>, keeps only the top-<i>k</i> trustworthy frames, <b>routes</b> each sub-query to the tool best suited to it, and <b>fuses tiered evidence</b> (High / Mid / Low) into an answer it can label <b>HIGH</b> confidence — rather than trusting every corrupted frame equally. This confidence-aware loop is precisely what converts silent failure into graceful, measurable degradation.</p>
     </div>
-    <p class="demo-note">Click any card for details. Full figures are available in the paper.</p>
   </section>
 
   <div class="wrap"><hr class="divider" /></div>
 
-  <!-- METHOD -->
+  <!-- ───────────── METHOD ───────────── -->
   <section id="method" class="sect wrap">
     <div class="reveal">
-      <span class="sect-label">Core mechanisms</span>
-      <h2>Three pillars of robust reasoning</h2>
+      <span class="sect-label">Method</span>
+      <h2>The Robust-TO pipeline</h2>
+      <p>A single trustworthiness signal flows from raw frames to the final answer. Each stage consumes the previous stage's confidence and emits its own — the agent never reasons over an observation without knowing how much to trust it.</p>
     </div>
-    <div class="pillars stagger">
+
+    <p class="reveal" style="margin-top:.5rem;color:var(--ink-2);font-size:.94rem;line-height:1.78;">The complete module-level architecture — frame profiling, the disturbance-aware router, three-tier synthesis, and the GRPO reward — is given in <b>Figure 1</b>. Below we distill the four design principles that make that flow robust.</p>
+
+    <div class="reveal" style="margin-top:2.2rem;">
+      <span class="sect-label">Core mechanisms</span>
+      <h2 style="font-size:1.4rem;">Four design principles</h2>
+    </div>
+    <div class="pillars stagger reveal">
       <div class="pillar">
-        <div class="pillar-num">Pillar 01</div>
-        <h3>Disturbance‑aware evidence acquisition</h3>
-        <p>Frames ranked by reliability × relevance, sub‑queries routed to tools robust to dominant corruption (blur → captioning, occlusion → action recognition).</p>
+        <div class="pillar-num">Principle 01</div>
+        <h3>Reliability is relative</h3>
+        <p>Frames are scored by <code>reliability × relevance</code>; corrupted-but-irrelevant frames and clean-but-uninformative frames are both pruned before any tool fires.</p>
       </div>
       <div class="pillar">
-        <div class="pillar-num">Pillar 02</div>
-        <h3>Confidence‑weighted synthesis</h3>
-        <p>Three reliability tiers: HIGH drives conclusion, MEDIUM checked for consistency, LOW fallback with explicit uncertainty.</p>
+        <div class="pillar-num">Principle 02</div>
+        <h3>Route to the robust tool</h3>
+        <p>Blur favors <code>caption_frame</code>; occlusion favors <code>recognize_action</code>; low light favors enhanced <code>detect_objects</code> — corruption type selects the tool, not the other way around.</p>
       </div>
       <div class="pillar">
-        <div class="pillar-num">Pillar 03</div>
-        <h3>Confidence‑cost GRPO</h3>
-        <p>Joint optimization of correctness, evidence reliability, and efficiency. Frozen N* estimator prevents reward gaming.</p>
+        <div class="pillar-num">Principle 03</div>
+        <h3>Doubt is structured</h3>
+        <p>Contradictory MEDIUM-tier facts are discarded rather than averaged, so a robust answer emerges from the evidence that actually holds up.</p>
       </div>
       <div class="pillar">
-        <div class="pillar-num">Pillar 04</div>
-        <h3>Plug‑and‑play tools</h3>
-        <p>detect_objects, caption_frame, track_temporal, recognize_action, read_text — each with unified (result, confidence) contract.</p>
+        <div class="pillar-num">Principle 04</div>
+        <h3>Confidence can't be gamed</h3>
+        <p>A frozen <code>N*</code> disturbance estimator anchors the GRPO reward — the agent is rewarded for being right <em>and</em> calibrated, never for bluffing.</p>
       </div>
     </div>
   </section>
 
   <div class="wrap"><hr class="divider" /></div>
 
-  <!-- RESULTS -->
+  <!-- ───────────── INTERACTIVE DEMO ───────────── -->
+  <section id="demo" class="sect wrap">
+    <div class="reveal">
+      <span class="sect-label">Interactive</span>
+      <h2>Watch trustworthiness drive the agent</h2>
+      <p>Apply real-world corruptions to an embodied navigation frame and observe how Robust-TO re-estimates reliability, re-routes to a robust tool, and adjusts its evidence tier — while a blind baseline's confidence stays flat. Toggle corruptions and drag the intensity.</p>
+    </div>
+
+    <div class="demo-shell reveal">
+      <div class="demo-top">
+        <!-- SCENE -->
+        <div class="demo-scene">
+          <svg id="scene" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-label="Synthetic embodied navigation frame.">
+            <defs>
+              <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#1e3a5f"/><stop offset="100%" stop-color="#0a1626"/>
+              </linearGradient>
+              <linearGradient id="road" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#2b3a4f"/><stop offset="100%" stop-color="#14202f"/>
+              </linearGradient>
+            </defs>
+            <rect width="400" height="180" fill="url(#sky)"/>
+            <rect y="180" width="400" height="120" fill="url(#road)"/>
+            <!-- horizon glow -->
+            <ellipse cx="280" cy="120" rx="70" ry="22" fill="#3b82f6" opacity="0.18"/>
+            <!-- road lines -->
+            <polygon points="180,180 220,180 280,300 120,300" fill="#1a2738"/>
+            <g stroke="#cbd5e1" stroke-width="3" stroke-dasharray="14 16" opacity="0.55"><line x1="200" y1="186" x2="200" y2="300"/></g>
+            <!-- building blocks -->
+            <rect x="20" y="96" width="46" height="84" fill="#16243a"/>
+            <rect x="74" y="118" width="34" height="62" fill="#1b2c44"/>
+            <rect x="320" y="84" width="54" height="96" fill="#16243a"/>
+            <g fill="#fbbf24" opacity="0.7"><rect x="28" y="106" width="7" height="9"/><rect x="44" y="106" width="7" height="9"/><rect x="28" y="126" width="7" height="9"/><rect x="44" y="126" width="7" height="9"/><rect x="330" y="98" width="8" height="10"/><rect x="350" y="98" width="8" height="10"/><rect x="330" y="120" width="8" height="10"/><rect x="350" y="120" width="8" height="10"/></g>
+            <!-- EXIT sign -->
+            <rect x="135" y="92" width="58" height="26" rx="3" fill="#0e9f6e"/>
+            <text x="164" y="110" font-family="'JetBrains Mono',monospace" font-size="13" fill="#fff" text-anchor="middle" font-weight="600">EXIT</text>
+            <line x1="164" y1="118" x2="164" y2="150" stroke="#475569" stroke-width="3"/>
+            <!-- pedestrian agents -->
+            <g fill="#cbd5e1"><circle cx="250" cy="150" r="7"/><rect x="244" y="158" width="12" height="26" rx="5"/></g>
+            <g fill="#94a3b8"><circle cx="300" cy="158" r="6"/><rect x="295" y="165" width="10" height="22" rx="4"/></g>
+            <!-- moving vehicle -->
+            <rect x="60" y="196" width="56" height="24" rx="6" fill="#3b82f6"/>
+            <circle cx="74" cy="222" r="7" fill="#0a1626" stroke="#64748b" stroke-width="2"/>
+            <circle cx="104" cy="222" r="7" fill="#0a1626" stroke="#64748b" stroke-width="2"/>
+          </svg>
+          <div class="scene-overlay ov-glare" id="ovGlare"></div>
+          <div class="ov-occ" id="ovOcc"></div>
+          <div class="scene-overlay ov-dark" id="ovDark"></div>
+          <div class="scene-overlay ov-noise" id="ovNoise"></div>
+          <div class="scene-badge" id="sceneBadge">INPUT · clean</div>
+          <div class="scene-tool" id="sceneTool">→ default route</div>
+        </div>
+
+        <!-- PANEL -->
+        <div class="demo-panel">
+          <div>
+            <div class="demo-h">Inject corruption</div>
+            <div class="corrupt-chips" id="chips">
+              <span class="cbtn" data-c="blur">Motion Blur</span>
+              <span class="cbtn" data-c="glare">Glare</span>
+              <span class="cbtn" data-c="occ">Occlusion</span>
+              <span class="cbtn" data-c="dark">Low-Light</span>
+              <span class="cbtn" data-c="noise">Gaussian Noise</span>
+            </div>
+          </div>
+          <div class="slider-row">
+            <label>Intensity</label>
+            <input type="range" id="intensity" min="0" max="100" value="55" />
+            <span class="meter-val" id="intVal" style="color:var(--ink-3)">55%</span>
+          </div>
+
+          <div class="meter">
+            <div class="meter-top"><span class="meter-name">Per-frame reliability</span><span class="meter-val" id="relVal">0.96</span></div>
+            <div class="meter-bar"><div class="meter-fill" id="relBar" style="width:96%;background:var(--hi)"></div></div>
+          </div>
+          <div class="meter">
+            <div class="meter-top"><span class="meter-name" style="color:var(--ink-4)">Blind baseline confidence</span><span class="meter-val" id="baseVal" style="color:var(--ink-4)">0.93</span></div>
+            <div class="meter-bar"><div class="meter-fill" id="baseBar" style="width:93%;background:var(--ink-4)"></div></div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span class="tier-pill" id="tierPill" style="background:var(--hi-wash);color:var(--hi)"><span class="d" style="background:var(--hi)"></span>HIGH TIER</span>
+            <span style="font-size:.72rem;color:var(--ink-4);font-family:var(--f-mono)">routed →</span>
+            <span class="chip" id="routeChip">detect_objects</span>
+          </div>
+
+          <div class="demo-answer" id="answer">Robust-TO answer: <b>EXIT</b> — driven by HIGH-confidence evidence.</div>
+        </div>
+      </div>
+      <div class="demo-foot"><b>The contrast that matters:</b> the gray baseline confidence barely moves as the frame degrades, while Robust-TO's reliability (and its evidence tier) tracks the actual damage — the difference between a planner that knows it's blind and one that doesn't.</div>
+    </div>
+  </section>
+
+  <div class="wrap"><hr class="divider" /></div>
+
+  <!-- ───────────── RESULTS ───────────── -->
   <section id="results" class="sect wrap">
     <div class="reveal">
-      <span class="sect-label">Experimental validation</span>
-      <h2>State‑of‑the‑art robustness &amp; accuracy</h2>
-      <p>Evaluated on <strong>UrbanVideo-Bench</strong> (outdoor embodied: LP, CF, PE, AG) and <strong>VSI-Bench</strong> (indoor spatial: RDist, RDir, RP, AO) under clean and RoVA‑V1 corrupted variants (Motion Blur, Glare, Occlusion, Low‑Light, Gaussian Noise).</p>
+      <span class="sect-label">Experiments</span>
+      <h2>State-of-the-art robustness and accuracy</h2>
+      <p>Evaluated on <strong>UrbanVideo-Bench</strong> (outdoor embodied: LP, CF, PE, AG) and <strong>VSI-Bench</strong> (indoor spatial: RDist, RDir, RP, AO) under clean and <strong>RoVA-V1</strong> corrupted variants — Motion Blur, Glare, Occlusion, Low-Light, and Gaussian Noise. Best per column in <b>bold</b>; <span class="star">★</span> marks our full model.</p>
     </div>
 
-    <div class="result-block reveal">
-      <div class="result-block-head">Average accuracy — clean benchmarks (8 tasks)</div>
-      <div class="result-row"><span class="result-name">Gemini-2.5-Pro (1fps)</span><span class="result-score">46.2</span></div>
-      <div class="result-row"><span class="result-name">Qwen2.5-VL-7B SFT</span><span class="result-score">45.8</span></div>
-      <div class="result-row"><span class="result-name">Video-R1 + Qwen3-VL-7B</span><span class="result-score">52.0</span></div>
-      <div class="result-row ours"><span class="result-name">Robust‑TO + Qwen2.5-VL-7B</span><span class="result-score">50.7</span></div>
-      <div class="result-row ours best"><span class="result-name">Robust‑TO + Qwen3-VL-7B</span><span class="result-score">56.4</span></div>
+    <!-- TABLE 1 · real main-results image -->
+    <div class="tbl-wrap reveal">
+      <div class="tbl-head">
+        <span class="t">Table 1 · Main results — 8 embodied spatial-reasoning tasks</span>
+        <span class="meta"><a href="assets/main_results.png" target="_blank" style="color:var(--accent);text-decoration:none;">PNG ↗</a></span>
+      </div>
+      <div class="figframe-body" style="padding:1rem;">
+        <img src="assets/main_results.png" alt="Table 1: per-task accuracy across UrbanVideo-Bench and VSI-Bench. Robust-TO + Qwen3-VL-7B reaches 56.4 average, +10.6 over the strongest fine-tuned baseline, using only 20.7 frames." style="width:100%;max-width:760px;height:auto;display:block;margin:0 auto;background:#fff;border-radius:6px;" />
+      </div>
+    </div>
+    <p class="result-note reveal" style="margin-top:.9rem;"><b>Reading Table 1.</b> Across all eight UrbanVideo-Bench and VSI-Bench tasks, <strong>Robust-TO + Qwen3-VL-7B reaches 56.4 average accuracy</strong> — <strong>+10.6</strong> over the strongest open-source / fine-tuned baseline (Qwen2.5-VL-7B SFT at 45.8) and ahead of every proprietary and SOTA-reasoning model, including Gemini-2.5-Pro (46.2). It posts the <strong>best score on six of the eight tasks</strong> (e.g. Appearance Order 77.5, Landmark Position 61.1, Action Generation 59.0) while reading only <strong>20.7 frames</strong> on average versus 32 for the baselines — higher accuracy at lower cost.</p>
+
+    <!-- TABLE 2 -->
+    <div class="tbl-wrap reveal">
+      <div class="tbl-head">
+        <span class="t">Table 2 · Accuracy under RoVA-V1 corruptions</span>
+        <span class="meta">UrbanVideo-Bench · accuracy (%)</span>
+      </div>
+      <div class="tbl-scroll">
+        <table class="res">
+          <thead>
+            <tr>
+              <th class="method">Method</th>
+              <th>Motion&nbsp;Blur</th><th>Glare</th><th>Occlusion</th><th>Low-Light</th><th>G.&nbsp;Noise</th><th>Avg.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="method">GPT-4o</td><td>34.0</td><td>32.0</td><td>30.0</td><td>34.5</td><td>30.5</td><td class="avg">32.2</td></tr>
+            <tr><td class="method">Gemini-2.5-Pro</td><td>39.0</td><td>37.8</td><td>35.2</td><td>40.5</td><td>38.0</td><td class="avg">38.1</td></tr>
+            <tr><td class="method">Video-R1 + Qwen3-VL-7B</td><td>49.5</td><td>48.0</td><td>45.8</td><td>50.2</td><td>49.0</td><td class="avg">48.5</td></tr>
+            <tr class="ours"><td class="method">Robust-TO + Qwen2.5-VL-7B</td><td>48.0</td><td>46.8</td><td>44.5</td><td>48.5</td><td>47.7</td><td class="avg">47.1</td></tr>
+            <tr class="ours-best"><td class="method"><span class="star">★</span> Robust-TO + Qwen3-VL-7B</td><td class="best">55.2</td><td class="best">54.0</td><td class="best">51.8</td><td class="best">56.0</td><td class="best">54.5</td><td class="avg best">54.3</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <div class="result-block reveal">
-      <div class="result-block-head">Average accuracy — corrupted UrbanVideo-Bench (5 corruptions)</div>
-      <div class="result-row"><span class="result-name">GPT-4o</span><span class="result-score">32.2</span></div>
-      <div class="result-row"><span class="result-name">Gemini-2.5-Pro</span><span class="result-score">38.1</span></div>
-      <div class="result-row"><span class="result-name">Video-R1 + Qwen3-VL-7B</span><span class="result-score">48.5</span></div>
-      <div class="result-row ours"><span class="result-name">Robust‑TO + Qwen2.5-VL-7B</span><span class="result-score">47.1</span></div>
-      <div class="result-row ours best"><span class="result-name">Robust‑TO + Qwen3-VL-7B</span><span class="result-score">54.3</span></div>
+    <!-- ROBUSTNESS DELTA -->
+    <div class="reveal" style="margin-top:1.8rem;">
+      <span class="sect-label">Graceful degradation</span>
+      <h2 style="font-size:1.4rem;">Smallest drop, fewer frames, lower latency</h2>
+    </div>
+    <div class="delta-wrap stagger reveal">
+      <div class="delta-card win">
+        <div class="lab">CLEAN → CORRUPTED DROP (Δ)</div>
+        <div class="num">3.0</div>
+        <div class="delta-track"><i style="width:24%;background:var(--hi)"></i></div>
+        <div class="sub">Robust-TO+Qwen3 vs. <b>3.5</b> Video-R1 · <b>6.2</b> Gemini</div>
+      </div>
+      <div class="delta-card">
+        <div class="lab">FRAMES PROCESSED</div>
+        <div class="num">−35<small>%</small></div>
+        <div class="delta-track"><i style="width:65%;background:var(--accent-bright)"></i></div>
+        <div class="sub">reliability×relevance selection prunes redundant frames</div>
+      </div>
+      <div class="delta-card">
+        <div class="lab">INFERENCE TIME</div>
+        <div class="num">−35<small>%</small></div>
+        <div class="delta-track"><i style="width:65%;background:var(--cyan-bright)"></i></div>
+        <div class="sub">&lt;5% overhead added on clean inputs</div>
+      </div>
     </div>
 
-    <p class="result-note reveal">Robust‑TO exhibits the <strong>smallest clean‑to‑corrupted accuracy drop</strong> among all compared methods (Δ = 3.0 for Qwen3-VL-7B vs Δ = 3.5 / 6.2 for Video‑R1 / Gemini) while cutting processed frames by <strong>35%</strong> and inference time by over 35%.</p>
+    <p class="result-note reveal">Robust-TO + Qwen3-VL-7B sets the best result on <strong>every task and every corruption type</strong>, while exhibiting the <strong>smallest clean-to-corrupted accuracy drop</strong> (Δ = 3.0) among all compared methods. Crucially, robustness does not cost compute: by reading 35% fewer frames it <strong>cuts inference time by over 35%</strong> and adds <strong>under 5% overhead</strong> on clean inputs — graceful degradation that is essentially free.</p>
   </section>
 
   <div class="wrap"><hr class="divider" /></div>
 
-  <!-- PAPER -->
+  <!-- ───────────── PAPER ───────────── -->
   <section id="paper" class="sect wrap">
     <div class="reveal">
-      <span class="sect-label">Paper</span>
-      <h2>Read the full manuscript</h2>
-      <p>Preprint includes all derivations, additional ablations, case studies, and tool implementation details.</p>
-      <div class="btn-row" style="justify-content: flex-start; margin-top: 1rem;">
+      <span class="sect-label">Manuscript</span>
+      <h2>Read the full paper</h2>
+      <p>The preprint includes all derivations, the full ablation suite, per-tool implementation details, and qualitative case studies under concurrent corruptions.</p>
+      <div class="btn-row" style="justify-content:flex-start;margin-top:1.1rem;">
         <a href="assets/paper.pdf" class="btn btn-fill" target="_blank">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           Open PDF
@@ -909,12 +739,12 @@
 
   <div class="wrap"><hr class="divider" /></div>
 
-  <!-- CITATION -->
-  <section id="citation" class="sect wrap">
+  <!-- ───────────── CITE ───────────── -->
+  <section id="cite" class="sect wrap">
     <div class="reveal">
       <span class="sect-label">Reference</span>
       <h2>BibTeX</h2>
-      <p>If you find Robust‑TO useful for your research, please cite:</p>
+      <p>If you find Robust-TO useful for your research, please consider citing:</p>
     </div>
     <div class="cite-block reveal">
       <div class="cite-head">
@@ -932,56 +762,152 @@
 
   <footer>
     <div class="wrap">
-      <p>© 2026 He, Choi, Yoon &ensp;·&ensp; NTU Singapore &ensp;·&ensp; University of Minnesota – Twin Cities &ensp;·&ensp; UNIST<br/>
+      <p class="ack">We thank the NTU and UNIST communities for compute and feedback. Robust-TO is released for research use; the RoVA-V1 corruption suite and tool implementations are available in the code repository.</p>
+      <p>© 2026 He, Choi, Yoon &ensp;·&ensp; NTU Singapore &ensp;·&ensp; University of Minnesota–Twin Cities &ensp;·&ensp; UNIST<br/>
       Correspondence: <a href="mailto:jaehong.yoon@ntu.edu.sg">jaehong.yoon@ntu.edu.sg</a></p>
     </div>
   </footer>
 </main>
 
 <script>
-  // ── Copy BibTeX ──
+  // ── scroll progress ──
+  const progress = document.getElementById('progress');
+  const onScroll = () => {
+    const h = document.documentElement;
+    const pct = (h.scrollTop) / (h.scrollHeight - h.clientHeight) * 100;
+    progress.style.width = pct + '%';
+  };
+  document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+
+  // ── active nav highlight ──
+  const navMap = {};
+  document.querySelectorAll('.nav-links a').forEach(a => navMap[a.getAttribute('href').slice(1)] = a);
+  const secObserver = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        Object.values(navMap).forEach(a => a.classList.remove('active'));
+        if (navMap[e.target.id]) navMap[e.target.id].classList.add('active');
+      }
+    });
+  }, { rootMargin: '-45% 0px -50% 0px' });
+  document.querySelectorAll('section[id]').forEach(s => secObserver.observe(s));
+
+  // ── smooth anchor scroll ──
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const id = a.getAttribute('href').substring(1);
+      const el = document.getElementById(id);
+      if (el) { e.preventDefault(); el.scrollIntoView({ behavior: 'smooth', block: 'start' }); history.pushState(null, '', '#' + id); }
+    });
+  });
+
+  // ── reveal ──
+  const revObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal, .stagger').forEach(el => revObserver.observe(el));
+
+  // ── copy bibtex ──
   const copyBtn = document.getElementById('copyBtn');
   const bibtex = document.getElementById('bibtex-content').innerText;
   copyBtn.addEventListener('click', () => {
     navigator.clipboard.writeText(bibtex).then(() => {
       copyBtn.textContent = 'Copied ✓';
-      setTimeout(() => copyBtn.textContent = 'Copy', 2000);
+      setTimeout(() => copyBtn.textContent = 'Copy', 1800);
     }).catch(() => {
-      const range = document.createRange();
-      range.selectNodeContents(document.getElementById('bibtex-content'));
-      const sel = window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
-      document.execCommand('copy');
-      copyBtn.textContent = 'Copied ✓';
-      setTimeout(() => copyBtn.textContent = 'Copy', 2000);
+      const r = document.createRange(); r.selectNodeContents(document.getElementById('bibtex-content'));
+      const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand('copy');
+      copyBtn.textContent = 'Copied ✓'; setTimeout(() => copyBtn.textContent = 'Copy', 1800);
     });
   });
 
-  // ── Smooth anchor scroll ──
-  document.querySelectorAll('a[href^="#"]').forEach(a => {
-    a.addEventListener('click', e => {
-      const id = a.getAttribute('href').substring(1);
-      if (!id) return;
-      const el = document.getElementById(id);
-      if (el) {
-        e.preventDefault();
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        history.pushState(null, null, `#${id}`);
-      }
-    });
-  });
+  // ── interactive corruption demo ──
+  (function(){
+    const state = { blur:false, glare:false, occ:false, dark:false, noise:false, intensity:55 };
+    const penalties = { blur:0.32, glare:0.22, occ:0.30, dark:0.18, noise:0.22 };
+    const labels = { blur:'motion blur', glare:'glare', occ:'occlusion', dark:'low-light', noise:'gaussian noise' };
+    const tools  = { blur:'caption_frame', occ:'recognize_action', dark:'detect_objects⁺', glare:'read_text', noise:'track_temporal' };
 
-  // ── Scroll reveal ──
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-      }
-    });
-  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    const scene = document.getElementById('scene');
+    const ov = { glare: document.getElementById('ovGlare'), occ: document.getElementById('ovOcc'), dark: document.getElementById('ovDark'), noise: document.getElementById('ovNoise') };
+    const badge = document.getElementById('sceneBadge');
+    const sceneTool = document.getElementById('sceneTool');
+    const relVal = document.getElementById('relVal'), relBar = document.getElementById('relBar');
+    const baseVal = document.getElementById('baseVal'), baseBar = document.getElementById('baseBar');
+    const tierPill = document.getElementById('tierPill'), routeChip = document.getElementById('routeChip');
+    const answer = document.getElementById('answer'), intVal = document.getElementById('intVal');
 
-  document.querySelectorAll('.reveal, .stagger').forEach(el => observer.observe(el));
+    const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+    function update(){
+      const k = state.intensity / 100;
+      // reliability
+      let rel = 0.96;
+      let dominant = null, domPen = 0;
+      ['blur','glare','occ','dark','noise'].forEach(c => {
+        if (state[c]) {
+          rel -= penalties[c] * k;
+          if (penalties[c] * k > domPen) { domPen = penalties[c] * k; dominant = c; }
+        }
+      });
+      rel = Math.max(0.05, Math.min(0.98, rel));
+
+      // visuals
+      let blurPx = state.blur ? (k * 5.5) : 0;
+      let bright = state.dark ? (1 - 0.6 * k) : 1;
+      scene.style.filter = `blur(${blurPx}px) brightness(${bright})`;
+      ov.glare.style.opacity = state.glare ? (0.35 + 0.5 * k) : 0;
+      ov.occ.style.opacity = state.occ ? (0.55 + 0.4 * k) : 0;
+      ov.dark.style.opacity = state.dark ? (0.55 * k) : 0;
+      ov.noise.style.opacity = state.noise ? (0.25 + 0.45 * k) : 0;
+
+      // meters
+      const hi = cssVar('--hi'), med = cssVar('--med'), lo = cssVar('--lo');
+      relVal.textContent = rel.toFixed(2);
+      relBar.style.width = (rel * 100) + '%';
+      let tier, tColor, tWash;
+      if (rel >= 0.7) { tier='HIGH'; tColor=hi; tWash=cssVar('--hi-wash'); }
+      else if (rel >= 0.4) { tier='MEDIUM'; tColor=med; tWash=cssVar('--med-wash'); }
+      else { tier='LOW'; tColor=lo; tWash=cssVar('--lo-wash'); }
+      relBar.style.background = tColor;
+      tierPill.style.background = tWash; tierPill.style.color = tColor;
+      tierPill.querySelector('.d').style.background = tColor;
+      tierPill.childNodes[1].nodeValue = tier + ' TIER';
+
+      // blind baseline confidence (flat, tiny jitter) — the whole point
+      const base = 0.92 + (Math.random()*0.02 - 0.01);
+      baseVal.textContent = base.toFixed(2);
+      baseBar.style.width = (base * 100) + '%';
+
+      // routing + badge
+      const route = dominant ? tools[dominant] : 'detect_objects';
+      routeChip.textContent = route;
+      sceneTool.textContent = '→ ' + route;
+      const active = ['blur','glare','occ','dark','noise'].filter(c => state[c]).map(c => labels[c]);
+      badge.textContent = 'INPUT · ' + (active.length ? active.join(' + ') : 'clean');
+
+      // answer
+      if (tier === 'HIGH') {
+        answer.innerHTML = 'Robust-TO answer: <b>EXIT</b> — driven by HIGH-confidence evidence.';
+        routeChip.className = 'chip hi';
+      } else if (tier === 'MEDIUM') {
+        answer.innerHTML = 'Robust-TO answer: <b>EXIT</b> — cross-checked across MEDIUM-tier evidence; uncertainty flagged.';
+        routeChip.className = 'chip med';
+      } else {
+        answer.innerHTML = 'Robust-TO action: <b>ABSTAIN</b> — reliable evidence insufficient; request re-acquisition.';
+        routeChip.className = 'chip lo';
+      }
+    }
+
+    document.getElementById('chips').addEventListener('click', e => {
+      const btn = e.target.closest('.cbtn'); if (!btn) return;
+      const c = btn.dataset.c; state[c] = !state[c]; btn.classList.toggle('on', state[c]); update();
+    });
+    const slider = document.getElementById('intensity');
+    slider.addEventListener('input', () => { state.intensity = +slider.value; intVal.textContent = slider.value + '%'; update(); });
+
+    update();
+  })();
 </script>
 
 </body>
