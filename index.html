@@ -437,10 +437,10 @@
       <div class="figframe">
         <div class="figframe-bar">
           <span class="dots"><i></i><i></i><i></i></span>
-          <span>framework.png &nbsp;·&nbsp; the Robust-TO architecture &nbsp;<a href="assets/framework.png" target="_blank" style="color:var(--accent);text-decoration:none;">PDF ↗</a></span>
+          <span>framework.pdf &nbsp;·&nbsp; the Robust-TO architecture &nbsp;<a href="assets/framework.pdf" target="_blank" style="color:var(--accent);text-decoration:none;">PDF ↗</a></span>
         </div>
         <div class="figframe-body" style="padding:0;">
-          <img src="assets/framework.png" alt="The Robust-TO framework: quality-assured reliable frame selection, disturbance-aware tool routing, confidence-weighted evidence synthesis, and GRPO training." style="width:100%;height:auto;display:block;background:#fff;" />
+          <img src="assets/framework.pdf" alt="The Robust-TO framework: quality-assured reliable frame selection, disturbance-aware tool routing, confidence-weighted evidence synthesis, and GRPO training." style="width:100%;height:auto;display:block;background:#fff;" />
         </div>
         <p class="figcap"><span class="ref">Figure 1.</span> <b>The Robust-TO framework.</b> A frozen, parameter-free profiler scores every frame for blur, brightness, and occlusion and keeps only a reliable subset (<i>Quality-Assured Reliable Frame Selection</i>). The query <span class="mono-em">q</span> is decomposed into sub-queries that a <b>disturbance-aware Router</b> dispatches to cost-annotated tools — <span class="mono-em">track_temporal</span>, <span class="mono-em">detect_objects</span>, <span class="mono-em">read_text</span>, … — each returning a unified <span class="mono-em">(result, confidence, source)</span> triple. <i>Confidence-Weighted Evidence Synthesis</i> then sorts that evidence into <b>High / Mid / Low</b> tiers to compose a calibrated answer. The policy is trained end-to-end with <b>GRPO</b> under a combined sub-query-efficiency + confidence-cost reward.</p>
       </div>
